@@ -165,6 +165,19 @@ for each bet size. After each hand it reveals the bots' reasoning. Numbers that
 depend on a bot's hidden cards are shown only if those cards were revealed at
 showdown, so the coach never leaks information.
 
+**Results** (heads-up duplicate matches, 100 BB stacks, 20,000 hands each, `scripts/quick_match.py`):
+
+| Level 2 vs | Win rate (95% CI) |
+|------------|-------------------|
+| Rule-based · Tight | +53.1 ± 16.7 bb/100 |
+| Rule-based · Balanced | +67.2 ± 23.7 bb/100 |
+| Rule-based · Loose-Aggressive | +96.3 ± 32.3 bb/100 |
+| Calling Station (2,000 hands) | +1,432 ± 129 bb/100 |
+
+```bash
+python scripts/quick_match.py equity rule_balanced 10000
+```
+
 **Known limitations:** EV covers one street (future streets enter only through `R`).
 Postflop ranges are ranked by made-hand strength, so draws in an opponent's range
 are under-weighted. Without an opponent model, fold rates are population defaults;
