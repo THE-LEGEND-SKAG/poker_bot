@@ -1,0 +1,110 @@
+import random
+
+import pytest
+from fastapi.testclient import TestClient
+
+from poker_ai.server.app import app
+from poker_ai.server.session import HUMAN, GameConfig, GameSession
+
+
+def drive_human(session: GameSession, rng: random.Random) -> None:
+    while session.to_act is not None:
+        if session.bot_to_act:
+            session.bot_step()
+            continue
+        legal = session.snapshot()["legal"]
+        choice = rng.choice(["passive", "passive", "fold", "raise"])
+        if choice == "raise" and legal["raise_type"]:
+            session.human_act(legal["raise_type"], rng.randint(legal["min_raise_to"], legal["max_raise_to"]))
+        elif choice == "fold" and legal["can_fold"]:
+            session.human_act("fold")
+        else:
+            session.human_act("check" if legal["can_check"] else "call")
+
+
+def test_session_plays_many_hands_and_conserves_chips():
+    cfg = GameConfig(bots=["rule_tight", "rule_balanced", "rule_lag", "random"], seed=7, rebuy_bots=False)
+    s = GameSession(cfg)
+    rng = random.Random(1)
+    total = cfg.starting_stack * 5
+    for _ in range(60):
+        if s.table.stacks[HUMAN] == 0:
+            s.rebuy_human()
+            total += cfg.starting_stack
+        if s.table.is_over:
+            break
+        s.start_hand()
+        drive_human(s, rng)
+        snap = s.snapshot()
+        assert snap["terminal"] and snap["result"] is not None
+        assert sum(seat["stack"] for seat in snap["seats"]) == total
+
+
+def test_snapshot_never_leaks_bot_cards_mid_hand():
+    s = GameSession(GameConfig(bots=["rule_balanced"] * 3, seed=3))
+    s.start_hand()
+    while s.to_act is not None:
+        snap = s.snapshot()
+        for seat in snap["seats"][1:]:
+            assert seat["cards"] is None
+        assert snap["seats"][HUMAN]["cards"] is not None
+        if s.bot_to_act:
+            s.bot_step()
+        else:
+            s.human_act("check" if snap["legal"]["can_check"] else "fold")
+
+
+def test_human_cannot_act_out_of_turn_or_illegally():
+    s = GameSession(GameConfig(bots=["calling_station"], seed=2))
+    s.start_hand()
+    while s.bot_to_act:
+        s.bot_step()
+    from poker_ai.engine import IllegalActionError
+    with pytest.raises(IllegalActionError):
+        s.human_act("raise", 10**9)
+
+
+def test_bad_config_rejected():
+    with pytest.raises(ValueError):
+        GameSession(GameConfig(bots=["nope"]))
+    with pytest.raises(ValueError):
+        GameSession(GameConfig(bots=[]))
+
+
+def test_websocket_full_flow():
+    client = TestClient(app)
+    assert client.get("/api/health").json() == {"status": "ok"}
+    kinds = {a["kind"] for a in client.get("/api/agents").json()}
+    assert "rule_balanced" in kinds
+    with client.websocket_connect("/ws") as ws:
+        ws.send_json({"type": "new_game", "config": {"bots": ["rule_balanced", "rule_lag"], "seed": 5}, "bot_delay_ms": 0})
+        state = None
+        for _ in range(400):
+            msg = ws.receive_json()
+            assert msg["type"] != "error", msg
+            if msg["type"] != "state":
+                continue
+            state = msg["state"]
+            if state["terminal"] or state["to_act"] == 0:
+                break
+        assert state is not None
+        hands = 0
+        while hands < 5:
+            if state["terminal"]:
+                hands += 1
+                if state["human_busted"]:
+                    ws.send_json({"type": "rebuy"})
+                    assert ws.receive_json()["type"] == "state"
+                ws.send_json({"type": "next_hand"})
+            elif state["to_act"] == 0:
+                legal = state["legal"]
+                ws.send_json({"type": "action", "action": "check" if legal["can_check"] else "call"})
+            while True:
+                msg = ws.receive_json()
+                assert msg["type"] != "error", msg
+                if msg["type"] == "state" and (msg["state"]["terminal"] or msg["state"]["to_act"] == 0):
+                    state = msg["state"]
+                    break
+        ws.send_json({"type": "action", "action": "raise", "amount": -5})
+        # either an error (illegal / not our turn) followed by a state
+        assert ws.receive_json()["type"] == "error"

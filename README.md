@@ -4,15 +4,17 @@ A playable No-Limit Texas Hold'em platform: a rules-exact engine, a ladder of
 AI opponents (rule-based → Monte Carlo → exploitative → CFR blueprint → neural
 PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 
-> **Status:** Milestone 1 (engine) complete. Everything below the checklist line
-> marked ☐ is **not built yet** and is not claimed to work.
+> **Status:** Milestones 1–2 complete: the engine and a playable web table against
+> rule-based bots. Rows marked ☐ are **not built yet** and are not claimed to work.
+
+![Three-way all-in with a side pot](docs/table-showdown.png)
 
 ## Progress
 
 | # | Milestone | Status |
 |---|-----------|--------|
-| 1 | Engine: evaluator, betting, all-ins, side pots, randomised chip-conservation stress test | ✅ done, 78 tests |
-| 2 | Rule-based bots + playable table UI (FastAPI + React vertical slice) | ☐ |
+| 1 | Engine: evaluator, betting, all-ins, side pots, randomised chip-conservation stress test | ✅ done |
+| 2 | Rule-based bots + playable table UI (FastAPI + React vertical slice) | ✅ done, 94 tests total |
 | 3 | Monte Carlo equity bot + Coach panel (equity, pot odds, EV per action) | ☐ |
 | 4 | Opponent modelling (Bayesian stats, range narrowing) + 13×13 range heatmap | ☐ |
 | 5 | CFR: verified on Kuhn (game value −1/18) and Leduc via exploitability, then MCCFR blueprint for abstracted heads-up NLHE | ☐ |
@@ -25,12 +27,12 @@ PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 ```
 poker_ai/
   engine/      cards, hand evaluator, actions + legality, game state, pots, table   ✅
-  agents/      rule_based, equity, exploitative, cfr, neural                        ☐
+  agents/      random, calling station, rule_based (3 personalities) ✅ · equity, exploitative, cfr, neural ☐
   solvers/     cfr (Kuhn/Leduc/HUNL), abstraction, exploitability                   ☐
   learning/    networks, ppo, league, checkpoints                                   ☐
-  sim/         duplicate matches, tournaments, stats + confidence intervals         ☐
-  server/      FastAPI + WebSocket game sessions                                    ☐
-web/           React + Tailwind + Framer Motion (Table, Coach panel, Lab)           ☐
+  sim/         hand/session runner ✅ · duplicate matches, tournaments, CIs ☐
+  server/      FastAPI + WebSocket game sessions                                    ✅
+web/           React + Tailwind + Framer Motion: Table ✅ · Coach panel, Lab ☐
 tests/
 ```
 
@@ -82,6 +84,38 @@ h.apply(Action.call())
 print(h)                        # HandState(street=flop, ...)
 view = h.view(1)                # what seat 1 is allowed to see
 ```
+
+## Play (Milestone 2)
+
+```bash
+pip install -e ".[dev,server]"
+```
+
+```bash
+cd web && npm install && npm run build && cd ..
+```
+
+```bash
+python -m poker_ai          # open http://127.0.0.1:8000
+```
+
+The lobby lets you choose heads-up, 3-handed or 6-max (up to 8 bots), pick each
+opponent's type, set the blinds, starting stack and bot speed. At the table you get
+fold / check / call, a bet slider with 3 BB / ½ / ⅔ / pot presets and all-in, and
+keyboard shortcuts (`F`, `C`, `R`). The hand history appears in a side panel.
+Showdowns reveal the hands that went to showdown, label them, and mark each pot's
+winner. Busted bots rebuy automatically; when you bust you choose whether to rebuy.
+
+For frontend development with hot reload, run the server and also run
+`cd web && npm run dev` (Vite proxies `/api` and `/ws` to port 8000).
+
+**Level 1 rule-based bot** (`agents/rule_based.py`): preflop hands are graded with
+Chen-formula tiers, adjusted for position, number of players and the price to call,
+with push/fold below 12 BB. Postflop it enumerates every opponent holding to get its
+current hand strength, counts outs for draws, and compares the result with pot odds.
+There are three personalities (Tight / Balanced / Loose-Aggressive), with different
+thresholds, aggression, bluff frequency and bet size. Every decision records the rule
+that fired in `last_explanation`, which the Coach panel will use.
 
 ## Install & test
 
