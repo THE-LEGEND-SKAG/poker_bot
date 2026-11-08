@@ -485,3 +485,7 @@ distribution.
 
 Local play and simulation only. This project does not and will not connect to
 real-money sites or automate accounts on any platform.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

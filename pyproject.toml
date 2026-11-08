@@ -7,6 +7,8 @@ name = "poker-ai"
 version = "0.1.0"
 description = "Playable No-Limit Hold'em platform with rule-based, Monte Carlo, exploitative, CFR and neural agents"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["numpy>=1.26"]
 
 [project.optional-dependencies]
