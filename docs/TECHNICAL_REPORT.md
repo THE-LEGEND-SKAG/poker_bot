@@ -55,7 +55,7 @@ evaluation system.*
 * In heads-up play, the **CFR bot is the only one with no losing matchup**. It beats
   every other bot, including the neural one.
 * The neural bot posts the **highest average** score because it crushes weak bots,
-  but adaptive bots beat it. That is the classic trade-off between *exploitative*
+  but the CFR bot beats it clearly (−225 ± 72 bb/100). That is the classic trade-off between *exploitative*
   and *equilibrium* play, and the evaluation system was designed to expose it.
 
 ---
@@ -218,7 +218,7 @@ always 0** (chips already in the pot are gone either way):
 
 | Term | Meaning |
 |------|---------|
-| `R` (realisation) | How much of its equity a hand actually gets to use: 1.0 on the river or all-in; less otherwise, because future betting can force you off a hand (0.95 in position, 0.85 out of position) |
+| `R` (realisation) | How much of its equity a hand actually gets to use: 1.0 on the river or all-in; less otherwise, because future betting can force you off a hand (0.95 in position, 0.85 out of position). Preflop, starting hands below their fair share of the pot lose up to 30% more, because weak hands usually fold before showdown. This is a modelling assumption, not a measurement |
 | `FE` (fold equity) | Probability that every opponent folds |
 | `equity_when_called` | Equity against only the hands that *continue*: callers have stronger hands than average |
 
@@ -432,12 +432,12 @@ gives three outputs:
 
 | Bot | Average bb/100 (95% CI) | Worst matchup |
 |-----|-------------------------|---------------|
-| Neural (PPO), L5 | +509 ± 75 | −386 vs CFR |
-| Exploitative, L3 | +332 ± 63 | −182 vs CFR |
-| **CFR blueprint, L4** | +193 ± 46 | **+26 vs Balanced (never loses)** |
-| Monte Carlo EV, L2 | +110 ± 66 | −612 vs Neural |
-| Rule-based (3 styles), L1 | −50 to −61 | |
-| Calling Station, L0 | −972 ± 57 | |
+| Neural (PPO), L5 | +542 ± 75 | −386 vs CFR |
+| Exploitative, L3 | +246 ± 66 | −119 ± 207 vs Neural (within noise) |
+| **CFR blueprint, L4** | +182 ± 45 | **+28 vs Tight (never loses)** |
+| Monte Carlo EV, L2 | +155 ± 68 | −497 vs Neural |
+| Rule-based (3 styles), L1 | −51 to −93 | |
+| Calling Station, L0 | −918 ± 56 | |
 
 **How to read this.** The average rewards beating weak bots by a lot: the neural
 bot wins +2,218 against the Calling Station alone. The **worst matchup** measures
@@ -447,19 +447,19 @@ robustness, and there **CFR wins**: it beats every opponent.
 
 | Match | bb/100 (95% CI) |
 |-------|-----------------|
-| CFR vs Level 3 | +112 ± 56 |
-| CFR vs Level 2 | +154 ± 63 |
-| Level 3 vs Level 2 | +134 ± 100 |
+| CFR vs Level 3 | +116 ± 44 |
+| CFR vs Level 2 | +187 ± 60 |
+| Level 3 vs Level 2 | −114 ± 112 (within noise) |
 | Neural vs CFR | **−225 ± 72** |
-| Neural vs Level 3 | **−426 ± 82** |
+| Neural vs Level 3 | −12 ± 81 (even) |
 
 ### Multi-way (3,600 hands each)
 
 | Bot | 3-handed | 6-max |
 |-----|----------|-------|
-| Neural | **+406 ± 151** | −101 ± 143 |
-| CFR (uses Level 3 multi-way) | −163 ± 140 | +46 ± 107 |
-| Exploitative, L3 | −243 ± 129 | **+167 ± 102** |
+| Neural | **+183 ± 146** | −105 ± 146 |
+| CFR (uses Level 3 multi-way) | −148 ± 126 | +66 ± 96 |
+| Exploitative, L3 | −35 ± 123 | **+112 ± 99** |
 
 The neural bot was trained heads-up only, so it does well short-handed but not at
 6-max. Most 6-max differences are within noise at this sample size.
@@ -469,10 +469,12 @@ The neural bot was trained heads-up only, so it does well short-handed but not a
 ```mermaid
 flowchart LR
     W[Weak / fixed bots] -->|crushed by| N[Neural: learned to exploit them]
-    N -->|beaten by| X[Level 3: adapts to the neural bot's habits]
     N -->|beaten by| G[CFR: near-equilibrium, hard to exploit]
-    X -->|beaten by| G
+    X[Level 2 / Level 3: EV models] -->|beaten by| G
+    N -->|crushes| X2[Level 2]
 ```
+
+The neural bot crushes Level 2 (+584) but only plays Level 3 about even (−12 ± 81).
 
 This is the central trade-off in game AI. **Exploitative** play wins the most
 against weak opponents but can itself be exploited. **Equilibrium** play is
@@ -523,12 +525,15 @@ These make good interview stories: each was found by measuring, not guessing.
 | 5 | CFR converged slower than expected | Traversal skipped opponent branches with zero probability, so our average strategy wasn't updated there | Remove the pruning | Pruning is safe for regrets but not for the average strategy |
 | 6 | Neural bot looked best at 6-max | The evaluator rotated *bots* through seats each hand, scrambling opponent models keyed by seat | Rotate the button instead | Your evaluation harness can be the bug |
 | 7 | CFR and Level 3 (identical multi-way) scored very differently | With fixed seats, CFR always sat directly after the aggressive neural bot | Blocks with random seating and fresh bots | Fixed relative positions bias multi-way results |
+| 8 | Coach showed "Raise to 350 (2.5 BB)" | The label was fixed text, and the big blind's forced post was counted as a limper (+1 BB) | Labels from the final amount; limps counted from the action history | Never hard-code a description of a computed value |
+| 9 | Level 2 defended its big blind with 97% of hands | Every hand was assumed to keep 85–95% of its equity, but trash hands keep far less (they fold before showdown) | Preflop weak-hand realisation penalty: defence 97% → 82% | Check behaviour against theory, not just win rates |
+| 10 | After fix 9, Level 3 lost −493 bb/100 to Level 2 | Too large a penalty (0.5) made Level 3 fold its blinds to Level 2's frequent raises | Bisected each change against the previous commit; swept the penalty; chose 0.3 (neutral in that matchup) | Re-run benchmarks after every model change; one fix can create another weakness |
 
 ---
 
 ## 9. Testing and quality
 
-**149 automated tests** (`pytest`), plus a browser end-to-end test:
+**151 automated tests** (`pytest`), plus a browser end-to-end test:
 
 | Area | What's tested |
 |------|---------------|
@@ -604,6 +609,11 @@ In training: a learned value baseline with GAE, normalised advantages and large
 batches. In evaluation: duplicate matches (same cards both ways) and 95%
 confidence intervals.
 
+**"In one sentence, what did you find?"**
+The PPO bot ranks first on average win rate because it exploits weak bots, but it
+loses to the CFR bot, the only bot that beats every opponent: exploiting the weak
+versus staying safe against the strong.
+
 **"Your neural bot has the best average but loses to CFR. Is that a failure?"**
 It's the expected trade-off. The neural bot learned to exploit the opponents it
 trained against. CFR approximates equilibrium, so it is robust. That's why the
@@ -670,7 +680,7 @@ python -m poker_ai                                   # play at http://127.0.0.1:
 ```
 
 ```bash
-pytest                                               # 149 tests
+pytest                                               # 151 tests
 ```
 
 ```bash

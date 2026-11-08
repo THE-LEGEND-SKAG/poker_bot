@@ -170,7 +170,7 @@ for each bet size. After each hand it reveals the bots' reasoning. Numbers that
 depend on a bot's hidden cards are shown only if those cards were revealed at
 showdown, so the coach never leaks information.
 
-**Results** (heads-up duplicate matches, 100 BB stacks, 20,000 hands each, `scripts/quick_match.py`):
+**Results at Milestone 3** (heads-up duplicate matches, 100 BB stacks, 20,000 hands each, `scripts/quick_match.py`; historical: the EV model was refined later, see *Review fixes* below):
 
 | Level 2 vs | Win rate (95% CI) |
 |------------|-------------------|
@@ -183,7 +183,7 @@ showdown, so the coach never leaks information.
 python scripts/quick_match.py equity rule_balanced 10000
 ```
 
-**Update (equity realisation):** Level 3 originally under-performed Level 2 against
+**Update at Milestone 5 (equity realisation):** Level 3 originally under-performed Level 2 against
 the Calling Station (+1,222 vs +1,426 bb/100 on identical deals). The cause: its
 realisation factor assumed future betting would cost it equity, which a player
 who never bets cannot make it do. Level 3 now scales that loss by the opponent's
@@ -301,22 +301,23 @@ In heads-up play at 100 BB, **99.6%** of its decisions came from the blueprint.
   bot with 95% confidence. It did: +515 ± 152 (Balanced), +336 ± 135 (Tight),
   +460 ± 170 (Loose-Aggressive).
 
-**Honest caveat:** these wins are against bots it trained with. Against bots
-outside its league, the picture is different (6,000-hand duplicate matches):
+**Honest caveat:** these wins are against bots it trained with. Against stronger
+bots the picture is different (6,000-hand duplicate matches, current code):
 
 | Match | bb/100 (95% CI) |
 |-------|-----------------|
 | CFR (L4) vs Rule-based · Balanced | +63 ± 27 |
-| CFR (L4) vs Monte Carlo EV (L2) | +154 ± 63 |
-| CFR (L4) vs Exploitative (L3) | +112 ± 56 |
-| Exploitative (L3) vs Monte Carlo EV (L2) | +134 ± 100 |
-| Neural (L5) vs Monte Carlo EV (L2) | +631 ± 105 |
+| CFR (L4) vs Monte Carlo EV (L2) | +187 ± 60 |
+| CFR (L4) vs Exploitative (L3) | +116 ± 44 |
+| Exploitative (L3) vs Monte Carlo EV (L2) | −114 ± 112 (within noise) |
+| Neural (L5) vs Monte Carlo EV (L2) | +584 ± 107 |
 | Neural (L5) vs CFR (L4) | **−225 ± 72** |
-| Neural (L5) vs Exploitative (L3) | **−426 ± 82** |
+| Neural (L5) vs Exploitative (L3) | −12 ± 81 (even) |
 
 The neural policy is *exploitative*: it learned to beat the league's habits, but
-an opponent that adapts during the match (Level 3) or plays close to equilibrium
-(Level 4) beats it.
+the near-equilibrium CFR bot beats it clearly, and the adaptive Level 3 plays it
+about even. (Before the preflop-realisation fix in *Review fixes*, Level 3 beat
+it −426 ± 82; tightening Level 3's preflop play removed that edge.)
 
 ## Tournaments and the Lab (Milestone 7)
 
@@ -338,12 +339,12 @@ python -m poker_ai.sim.tournament --agents rule_balanced equity exploit cfr neur
 
 | Bot | Avg bb/100 (95% CI) | Worst matchup |
 |-----|---------------------|---------------|
-| Neural (PPO) · L5 | +509 ± 75 | −386 vs CFR |
-| Exploitative · L3 | +332 ± 63 | −182 vs CFR |
-| **CFR blueprint · L4** | +193 ± 46 | **+26 vs Balanced (no losing matchup)** |
-| Monte Carlo EV · L2 | +110 ± 66 | −612 vs Neural |
-| Rule-based · Balanced / Loose-Aggressive / Tight · L1 | −50 / −60 / −61 | |
-| Calling Station · L0 | −972 ± 57 | |
+| Neural (PPO) · L5 | +542 ± 75 | −386 vs CFR |
+| Exploitative · L3 | +246 ± 66 | −119 ± 207 vs Neural (within noise) |
+| **CFR blueprint · L4** | +182 ± 45 | **+28 vs Tight (no losing matchup)** |
+| Monte Carlo EV · L2 | +155 ± 68 | −497 vs Neural |
+| Rule-based · Balanced / Tight / Loose-Aggressive · L1 | −51 / −64 / −93 | |
+| Calling Station · L0 | −918 ± 56 | |
 
 The average rewards crushing weak bots (Neural wins +2,218 against the Calling
 Station alone); the worst matchup measures robustness. **CFR is the only bot that
@@ -385,18 +386,19 @@ python -m poker_ai.sim.ring --agents neural cfr exploit equity rule_balanced rul
 
 | Bot | 3-handed bb/100 | 6-max bb/100 |
 |-----|-----------------|--------------|
-| Neural (PPO) · L5 | **+406 ± 151** | −101 ± 143 |
-| CFR · L4 (falls back to L3 multi-way) | −163 ± 140 | +46 ± 107 |
-| Exploitative · L3 | −243 ± 129 | **+167 ± 102** |
-| Monte Carlo EV · L2 | — | +27 ± 102 |
-| Rule-based Balanced / Loose-Aggressive · L1 | — | −39 ± 69 / −99 ± 97 |
+| Neural (PPO) · L5 | **+183 ± 146** | −105 ± 146 |
+| CFR · L4 (falls back to L3 multi-way) | −148 ± 126 | +66 ± 96 |
+| Exploitative · L3 | −35 ± 123 | **+112 ± 99** |
+| Monte Carlo EV · L2 | — | +66 ± 102 |
+| Rule-based Balanced / Loose-Aggressive · L1 | — | −1 ± 73 / −139 ± 98 |
 
 3,600 hands each, 10–12 seatings. Read these with their intervals:
 
-* Three-handed, the hyper-aggressive neural policy wins when opponents' models
-  restart every 300 hands. With 3,600 hands of continuous learning (same
-  seating), Level 3 beat it instead (+131 ± 108 vs +93 ± 148).
-* At 6-max, Level 3 is the only significant winner.
+* Three-handed, the hyper-aggressive neural policy is the only significant
+  winner (opponents' models restart every 300 hands in this design).
+* At 6-max, Level 3 leads (+112 ± 99, borderline significant); the neural bot,
+  trained heads-up only, is last among the strong bots.
+* Most 6-max differences are within noise at 3,600 hands.
 * CFR and Level 3 play identically multi-way, by design.
 
 **Table layouts**: 2–9 players on desktop, plus a portrait layout on phones
@@ -427,6 +429,18 @@ cd web && npx playwright install chromium && npm run e2e
 3. `npm ci && npm run build` succeeds.
 4. The e2e test passes against that install.
 
+## Review fixes (after first public test)
+
+Feedback from playing the deployed site, and what changed:
+
+| Issue | Fix |
+|-------|-----|
+| ~30 s cold start (Render free tier sleeps) | `.github/workflows/keep-awake.yml` pings `/api/health` every 10 minutes (set the `SITE_URL` repository variable) |
+| Action buttons below the fold in short windows | Action bar is a fixed dock at the bottom; the table also limits its size by window height; phones get a compact two-row dock |
+| Coach said "Raise to 350 (2.5 BB)" | Two bugs: labels were fixed text, and the big blind's forced post was counted as a limper. Labels now derive from the final amount; limps are counted from the action history (also fixed in the Level 1 bot) |
+| "Equity realised" looked hard-coded | It *was* a fixed modelling assumption per position. Replaced in the Coach by the live stack-to-pot ratio; the assumption is explained in the footnote |
+| Level 2/3 played ~97% of hands | Measured: the 100% small-blind play is *raising*, and correct, because the rule bot folds its big blind to a raise 92% of the time. Level 2's big-blind defence (97%) was genuinely too loose: weak starting hands now realise less equity preflop (`WEAK_HAND_PENALTY = 0.3`), giving 82%. A stronger penalty (0.5) made Level 3 lose −493 bb/100 to Level 2 (found by bisecting), so 0.3 is the compromise; it does cost Level 3 its earlier head-to-head edge (now within noise). Benchmarks above are rerun on this code. |
+
 ## Acceptance criteria
 
 | # | Criterion | Evidence |
@@ -440,7 +454,7 @@ cd web && npx playwright install chromium && npm run e2e
 | 7 | Automated tournaments | `sim/tournament.py`, `sim/ring.py`, and the Lab form |
 | 8 | Metrics can be inspected | Lab: bb/100 ± CI, VPIP, PFR, AF, fold %, WTSD, W$SD, pot size, decision time |
 | 9 | Interface works reliably | e2e test on desktop and phone; WebSocket tests |
-| 10 | Tests cover edge cases | 149 tests (`pytest`) |
+| 10 | Tests cover edge cases | 151 tests (`pytest`) |
 | 11 | Clean install works | Fresh clone + venv check above |
 
 ## Limitations (honest)

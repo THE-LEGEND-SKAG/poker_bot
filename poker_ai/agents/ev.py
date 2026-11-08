@@ -10,8 +10,8 @@ where
 * ``eq``          equity vs the opponents' estimated ranges (Monte Carlo),
 * ``R``           equity realisation: 1.0 when no more betting can happen (river,
                   all-in). Otherwise it loses 5% in position / 15% out of position,
-                  plus up to 50% more for hands below their fair share of the pot
-                  (weak hands usually fold before showdown). Level 3 scales the loss
+                  plus, preflop only, up to 30% more for starting hands below their
+                  fair share of the pot (weak hands usually fold before showdown). Level 3 scales the loss
                   by how aggressive the opponents actually are,
 * ``FE``          probability every opponent folds. With no opponent model each
                   opponent folds ``(risk / (risk + reward)) ** 1.5``. A balanced
@@ -46,6 +46,7 @@ from .sizing import position_rank
 FoldModel = Callable[[PlayerView, int, int, int], float]
 
 
+WEAK_HAND_PENALTY = 0.3  # preflop: extra equity lost by below-fair-share starting hands (0.5 made L3 lose -493 bb/100 to L2; 0.3 is neutral there and cuts L2 BB-defence 97% -> 82%)
 DEFENSE_EXPONENT = 1.5  # > 1: folds less often than a balanced (MDF) defender
 
 
@@ -176,13 +177,18 @@ def analyze(view: PlayerView, sims: int = 600, rng: random.Random | None = None,
     to_call = legal.to_call
     no_more_betting = view.street is Street.RIVER or not any(not o.all_in for o in opps)
     pos = position_rank(view)
-    # Equity lost to future betting: a base amount by position, plus more for weak hands,
-    # which usually have to fold before showdown (they rarely "realise" their raw equity).
-    # Weakness is measured against the fair share of the pot, 1 / (players in the hand).
-    fair = 1.0 / (len(opps) + 1)
-    weakness = max(0.0, fair - eq.equity) / fair  # 0 for average-or-better hands, up to 1
-    loss = (0.05 if pos > 0.5 else 0.15) + 0.5 * weakness
-    R = 1.0 if no_more_betting else 1.0 - min(0.6, loss) * min(1.5, max(0.0, aggression_scale))
+    # Equity lost to future betting: a base amount by position. PREFLOP, weak starting
+    # hands lose more (they usually have to fold before showdown), measured against the
+    # fair share of the pot, 1 / (players in the hand). Postflop the equity is already
+    # computed against the opponents' (modelled) ranges, so no extra penalty is applied
+    # there; doing so made Level 3 over-fold to aggressive bettors (measured: -509 bb/100 vs Level 2).
+    weakness = 0.0
+    if view.street is Street.PREFLOP:
+        fair = 1.0 / (len(opps) + 1)
+        weakness = max(0.0, fair - eq.equity) / fair  # 0 for average-or-better hands, up to 1
+    loss = (0.05 if pos > 0.5 else 0.15) + WEAK_HAND_PENALTY * weakness
+    # cap the COMBINED loss: scaling by aggression must never push realisation below 40%
+    R = 1.0 if no_more_betting else 1.0 - min(0.6, loss * min(1.5, max(0.0, aggression_scale)))
 
     a = Analysis(street=view.street.label, equity=eq, pot=pot, to_call=to_call,
                  pot_odds=to_call / (pot + to_call) if to_call else 0.0, realization=R,

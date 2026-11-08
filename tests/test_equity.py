@@ -120,3 +120,13 @@ def test_size_labels_match_amounts():
                     if label.endswith(" BB"):
                         assert abs(float(label.split()[0]) * 100 - to) < 1e-6
             h.apply(la.passive() if rng.random() < 0.8 or la.raise_type is None else la.raise_action(la.min_raise_to))
+
+
+def test_realisation_is_bounded_and_weak_hands_realise_less():
+    """Regression: aggression scaling once pushed realisation to 10%, making Level 3 fold far too much."""
+    h = rigged_hand([10000, 10000], 0, 50, 100, {0: "7c 2d", 1: "As Ah"})
+    strong = rigged_hand([10000, 10000], 0, 50, 100, {0: "As Ah", 1: "7c 2d"})
+    for scale in (0.0, 1.0, 1.5, 5.0):
+        weak_r = analyze(h.view(0), 300, random.Random(0), aggression_scale=scale).realization
+        strong_r = analyze(strong.view(0), 300, random.Random(0), aggression_scale=scale).realization
+        assert 0.4 <= weak_r <= strong_r <= 1.0
