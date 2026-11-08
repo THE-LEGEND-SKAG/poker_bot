@@ -7,7 +7,7 @@ from poker_ai.agents import make_agent
 from poker_ai.agents.opponent_model import OpponentModel
 from poker_ai.engine import Action, HandState
 from poker_ai.learning.features import N_ACTIONS, OBS_DIM, NumpyPolicy, encode, legal_mask, to_action
-from poker_ai.learning.ppo import ActorCritic, gae, training_status
+from poker_ai.learning.returns import gae, training_status
 from poker_ai.learning.rollout import Batch
 from poker_ai.sim.runner import play_hand
 
@@ -41,7 +41,10 @@ def test_mask_matches_engine_legality_in_random_states():
 
 
 def test_numpy_forward_matches_torch():
+    pytest.importorskip("torch")  # training-only dependency
     import torch
+
+    from poker_ai.learning.ppo import ActorCritic
 
     net = ActorCritic()
     x = np.random.default_rng(0).normal(size=(5, OBS_DIM)).astype(np.float32)

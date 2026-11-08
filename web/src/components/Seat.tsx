@@ -11,9 +11,10 @@ type Props = {
   isTurn: boolean;
   thinking: boolean;
   handLabel?: string;
+  compact?: boolean;
 };
 
-export default function Seat({ seat, isHuman, isButton, isTurn, thinking, handLabel }: Props) {
+export default function Seat({ seat, isHuman, isButton, isTurn, thinking, handLabel, compact = false }: Props) {
   const out = !seat.in_hand && seat.stack === 0;
   const color = AVATAR_COLORS[seat.seat % AVATAR_COLORS.length];
   const showCards = seat.in_hand && !(seat.folded && !isHuman);
@@ -23,7 +24,7 @@ export default function Seat({ seat, isHuman, isButton, isTurn, thinking, handLa
         {showCards &&
           [0, 1].map((i) => (
             <div key={`${seat.seat}-${i}-${seat.cards?.[i] ?? "x"}`} style={{ transform: `rotate(${i ? 6 : -6}deg)` }}>
-              <PlayingCard card={seat.cards?.[i]} size={isHuman ? "lg" : "sm"} delay={i * 0.08} dim={seat.folded} />
+              <PlayingCard card={seat.cards?.[i]} size={isHuman ? (compact ? "md" : "lg") : "sm"} delay={i * 0.08} dim={seat.folded} />
             </div>
           ))}
       </div>
@@ -36,18 +37,18 @@ export default function Seat({ seat, isHuman, isButton, isTurn, thinking, handLa
               : { boxShadow: "0 0 0 1px rgba(255,255,255,0.12)" }
         }
         transition={{ duration: seat.winner ? 1.2 : 0.2 }}
-        className="relative z-10 flex min-w-36 items-center gap-2 rounded-xl bg-slate-950/90 px-2 py-1.5 backdrop-blur"
+        className={`relative z-10 flex items-center rounded-xl bg-slate-950/90 backdrop-blur ${compact ? "max-w-[92px] gap-1 px-1.5 py-1" : "min-w-36 gap-2 px-2 py-1.5"}`}
       >
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold text-slate-950"
+          className={`flex shrink-0 items-center justify-center rounded-full font-bold text-slate-950 ${compact ? "h-6 w-6 text-xs" : "h-10 w-10 text-lg"}`}
           style={{ background: color }}
         >
           {seat.name.slice(0, 1)}
         </div>
         <div className="min-w-0 leading-tight">
-          <div className="truncate text-sm font-semibold text-white">{seat.name}</div>
-          <div className="text-sm font-bold tabular-nums text-emerald-400">{seat.stack.toLocaleString()}</div>
-          <div className="truncate text-[10px] uppercase tracking-wide text-slate-400">{seat.label}</div>
+          <div className={`truncate font-semibold text-white ${compact ? "text-[11px]" : "text-sm"}`}>{seat.name}</div>
+          <div className={`font-bold tabular-nums text-emerald-400 ${compact ? "text-[11px]" : "text-sm"}`}>{seat.stack.toLocaleString()}</div>
+          {!compact && <div className="truncate text-[10px] uppercase tracking-wide text-slate-400">{seat.label}</div>}
         </div>
         {isButton && (
           <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[11px] font-black text-slate-900 shadow">
@@ -74,7 +75,7 @@ export default function Seat({ seat, isHuman, isButton, isTurn, thinking, handLa
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className={`mt-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${
+            className={`mt-1.5 rounded-md font-semibold ${compact ? "max-w-[110px] truncate px-1.5 text-[10px]" : "px-2 py-0.5 text-xs"} ${
               handLabel
                 ? "bg-amber-400 text-slate-950"
                 : seat.last_action === "Fold"

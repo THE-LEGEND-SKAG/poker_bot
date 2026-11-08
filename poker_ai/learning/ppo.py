@@ -30,7 +30,8 @@ from poker_ai.sim.duplicate import duplicate_match
 
 from .features import N_ACTIONS, OBS_DIM, NumpyPolicy
 from .paths import CHECKPOINT_DIR, LOG_PATH, POLICY_PATH
-from .rollout import Batch, PolicyAgent, collect
+from .returns import gae, merge, training_status
+from .rollout import PolicyAgent, collect
 
 
 FIXED_LEAGUE = {"rule_tight": 1.0, "rule_balanced": 1.0, "rule_lag": 1.0, "calling_station": 0.6, "random": 0.3, "equity": 0.6}
@@ -56,31 +57,6 @@ class ActorCritic(nn.Module):
         g = lambda t: t.detach().cpu().numpy().astype(np.float32)  # noqa: E731
         return {"w1": g(self.l1.weight).T, "b1": g(self.l1.bias), "w2": g(self.l2.weight).T, "b2": g(self.l2.bias),
                 "wp": g(self.pi.weight).T, "bp": g(self.pi.bias), "wv": g(self.v.weight).T, "bv": g(self.v.bias)}
-
-
-def gae(batch: Batch, lam: float = 0.9) -> tuple[np.ndarray, np.ndarray]:
-    """Advantages and returns. Episodes = one hand; reward only at the last decision."""
-    n = len(batch.actions)
-    adv = np.zeros(n, dtype=np.float32)
-    values = np.array(batch.values, dtype=np.float32)
-    nxt = 0.0
-    run = 0.0
-    for t in range(n - 1, -1, -1):
-        if batch.episode_end[t]:
-            nxt, run = 0.0, 0.0
-        delta = batch.rewards[t] + nxt - values[t]
-        run = delta + lam * run
-        adv[t] = run
-        nxt = values[t]
-    return adv, adv + values
-
-
-def merge(batches: list[Batch]) -> Batch:
-    out = Batch()
-    for b in batches:
-        for f in ("obs", "masks", "actions", "logp", "values", "episode_end", "rewards", "hand_results"):
-            getattr(out, f).extend(getattr(b, f))
-    return out
 
 
 def train(minutes: float = 30, workers: int = 3, decisions_per_update: int = 4096, seed: int = 0,
@@ -187,12 +163,3 @@ def evaluate(weights: dict[str, np.ndarray], update: int, deals: int, log=print,
     return out
 
 
-def training_status(meta: dict[str, Any]) -> str:
-    """'trained' only if the final policy beats every rule-based evaluation opponent
-    with a 95% confidence interval above zero; otherwise 'partially trained'."""
-    if meta.get("updates", 0) == 0:
-        return "untrained"
-    ev = meta.get("final_eval", {})
-    beats = all(ev.get(o, {}).get("bb100", 0) - ev.get(o, {}).get("ci95", 1e9) > 0
-                for o in ("rule_balanced", "rule_tight", "rule_lag"))
-    return "trained" if beats else "partially trained"

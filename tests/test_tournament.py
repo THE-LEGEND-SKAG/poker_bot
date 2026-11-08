@@ -47,3 +47,15 @@ def test_lab_api_runs_a_tournament_in_the_background():
     latest = c.get("/api/lab/tournament").json()
     assert latest["id"] == run_id and latest["leaderboard"]
     assert c.get(f"/api/lab/tournament/{run_id}/hands").json()
+
+
+def test_ring_rotation_is_zero_sum_and_symmetric():
+    from poker_ai.sim.ring import ring_match
+
+    r = ring_match(["calling_station", "calling_station", "calling_station"], deals=20, seed=1)
+    # identical agents with full seat rotation on identical decks: every agent nets exactly 0
+    assert all(row["bb100"] == 0 for row in r["results"])
+    r = ring_match(["rule_tight", "rule_lag", "random", "calling_station"], deals=15, seed=2)
+    assert abs(sum(row["bb100"] for row in r["results"])) < 0.5 and r["hands"] == 60
+    with pytest.raises(ValueError):
+        ring_match(["random", "random"], deals=1)

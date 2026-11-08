@@ -21,9 +21,9 @@ export default function RangeHeatmap({ ranges, labels }: { ranges: OpponentRange
   const r = ranges[Math.min(sel, ranges.length - 1)];
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1.5">
         <span className="text-xs uppercase tracking-wider text-slate-400">Estimated range</span>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {ranges.map((o, k) => (
             <button
               key={o.seat}
