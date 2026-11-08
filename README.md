@@ -4,6 +4,8 @@ A playable No-Limit Texas Hold'em platform: a rules-exact engine, a ladder of
 AI opponents (rule-based → Monte Carlo → exploitative → CFR blueprint → neural
 PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 
+> 📘 **New here?** Read the [technical report](docs/TECHNICAL_REPORT.md): how every part works, the results, and likely interview questions.
+
 > **Status:** all 8 milestones complete: the engine, a playable web table (2–9 players,
 > desktop and phone) with a Coach, five bot levels (rule-based → Monte Carlo EV →
 > exploitative → CFR blueprint → PPO neural), duplicate tournaments, multi-way ring
