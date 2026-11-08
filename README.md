@@ -186,7 +186,7 @@ Level 3 replaces them with observed statistics.
 ## Level 3: exploitative bot with opponent modelling (Milestone 4)
 
 **Tendencies** (`agents/opponent_model.py`): for every opponent the model tracks
-VPIP, PFR, folding to a preflop raise, betting when checked to, folding to a bet,
+VPIP (counting only hands where they faced a price; a free big-blind check is not a decision to play), PFR, folding to a preflop raise, betting when checked to, folding to a bet,
 raising against a bet, and going to showdown. Each is a Beta distribution that
 starts from a population prior worth a few hands and is updated by Bayes' rule
 after every hand. Early estimates stay close to typical play and sharpen with
@@ -211,9 +211,9 @@ Learned profiles after 150 hands of observation:
 
 | Bot | VPIP | PFR | Bets when checked to | Folds to bet |
 |-----|------|-----|----------------------|--------------|
-| Calling Station | 75% | 0.5% | 0.5% | 1% |
-| Rule-based · Tight | 27% | 7% | 31% | 30% |
-| Rule-based · Loose-Aggressive | 59% | 31% | 54% | 25% |
+| Calling Station | 98% | 0.5% | 0.5% | 1% |
+| Rule-based · Tight | 35% | 7% | 31% | 30% |
+| Rule-based · Loose-Aggressive | 74% | 31% | 54% | 25% |
 
 **The Level 3 bot** (`agents/exploitative.py`) uses the Level 2 EV engine with two
 inputs replaced: equity is computed against the modelled ranges, and fold

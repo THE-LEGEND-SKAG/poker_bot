@@ -75,7 +75,7 @@ def test_stats_distinguish_tight_from_loose():
     tight = observe_many("rule_tight").get(1)
     station = observe_many("calling_station").get(1)
     lag = observe_many("rule_lag").get(1)
-    assert station["vpip"] > 0.7 and station["pfr"] < 0.05 and station["fold_to_bet"] < 0.05
+    assert station["vpip"] > 0.9 and station["pfr"] < 0.05 and station["fold_to_bet"] < 0.05
     assert tight["vpip"] < lag["vpip"]
     assert lag["pfr"] > tight["pfr"]
     assert tight.hands >= 100

@@ -126,7 +126,7 @@ class BetaStat:
 
 # Population priors, each worth a few observations.
 PRIORS: dict[str, tuple[float, float]] = {
-    "vpip": (1.4, 2.6),          # voluntarily put chips in preflop      ~35%
+    "vpip": (1.4, 2.6),          # put chips in when facing a price      ~35%
     "pfr": (0.8, 3.2),           # raised preflop                        ~20%
     "fold_pf": (2.0, 2.0),       # folded preflop when facing a raise    ~50%
     "agg": (1.6, 2.4),           # bet/raised when not facing a bet       ~40%
@@ -185,6 +185,8 @@ class OpponentModel:
             if st == "preflop":
                 d = did.setdefault(s, set())
                 d.add("acted")
+                if a != "check":
+                    d.add("paid_decision")  # faced a price (a free big-blind check is not a VPIP opportunity)
                 if a in ("call", "raise"):
                     d.add("vpip")
                 if a == "raise":
@@ -212,7 +214,8 @@ class OpponentModel:
                 continue
             st = self.get(s)
             st.hands += 1
-            st.stats["vpip"].update("vpip" in d)
+            if "paid_decision" in d:
+                st.stats["vpip"].update("vpip" in d)
             st.stats["pfr"].update("pfr" in d)
         for s in saw_flop:
             if s != me:
