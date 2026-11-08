@@ -16,6 +16,7 @@ server -> client
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +29,7 @@ from poker_ai.engine import IllegalActionError
 
 from .session import GameConfig, GameSession
 
-WEB_DIST = Path(__file__).resolve().parents[2] / "web" / "dist"
+WEB_DIST = Path(os.environ.get("POKER_WEB_DIST", Path(__file__).resolve().parents[2] / "web" / "dist"))
 
 app = FastAPI(title="Poker AI")
 

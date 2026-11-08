@@ -85,6 +85,14 @@ print(h)                        # HandState(street=flop, ...)
 view = h.view(1)                # what seat 1 is allowed to see
 ```
 
+## Play online (no install)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/THE-LEGEND-SKAG/poker_bot)
+
+One click builds the `Dockerfile` (React build + FastAPI server) on Render's free
+tier using `render.yaml`. Free instances sleep when idle; the first visit after a
+while takes ~30-60 s to wake up.
+
 ## Play (Milestone 2)
 
 ```bash
