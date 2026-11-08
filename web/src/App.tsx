@@ -3,6 +3,7 @@ import ActionBar from "./components/ActionBar";
 import CoachPanel from "./components/CoachPanel";
 import Lobby from "./components/Lobby";
 import LogPanel from "./components/LogPanel";
+import Lab from "./lab/Lab";
 import Table from "./components/Table";
 import { useGame } from "./useGame";
 
@@ -11,11 +12,35 @@ export default function App() {
   const [inGame, setInGame] = useState(false);
   const [tab, setTab] = useState<"coach" | "history">("coach");
   const [coachOn, setCoachOn] = useState(true);
+  const [page, setPage] = useState<"play" | "lab">(location.hash === "#lab" ? "lab" : "play");
+  const go = (p: "play" | "lab") => {
+    setPage(p);
+    history.replaceState(null, "", p === "lab" ? "#lab" : "#");
+  };
+
+  if (page === "lab") {
+    return (
+      <div className="min-h-full p-3">
+        <header className="mx-auto mb-4 flex max-w-7xl items-center gap-3">
+          <h1 className="text-xl font-black text-white">
+            Poker <span className="text-emerald-400">AI</span> <span className="text-slate-500">Lab</span>
+          </h1>
+          <button onClick={() => go("play")} className="ml-auto rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-bold text-slate-950">
+            ← Play
+          </button>
+        </header>
+        <Lab />
+      </div>
+    );
+  }
   const s = game.state;
 
   if (!inGame || !s) {
     return (
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex min-h-full flex-col items-center justify-center gap-3 p-4">
+        <button onClick={() => go("lab")} className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-semibold text-slate-200 hover:bg-slate-700">
+          Open the Lab: leaderboard, training curves, replayer →
+        </button>
         <Lobby
           connected={game.status === "open"}
           onStart={(cfg, delay) => {
@@ -41,7 +66,10 @@ export default function App() {
             {human.session_net.toLocaleString()}
           </span>
         </div>
-        <div className={`ml-auto h-2 w-2 rounded-full ${game.status === "open" ? "bg-emerald-400" : "bg-red-500"}`} title={game.status} />
+        <button onClick={() => go("lab")} className="ml-auto rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-semibold hover:bg-slate-700">
+          Lab
+        </button>
+        <div className={`h-2 w-2 rounded-full ${game.status === "open" ? "bg-emerald-400" : "bg-red-500"}`} title={game.status} />
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">

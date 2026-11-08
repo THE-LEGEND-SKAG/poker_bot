@@ -29,11 +29,13 @@ from fastapi.staticfiles import StaticFiles
 from poker_ai.agents import available_agents
 from poker_ai.engine import IllegalActionError
 
+from .lab import router as lab_router
 from .session import GameConfig, GameSession
 
 WEB_DIST = Path(os.environ.get("POKER_WEB_DIST", Path(__file__).resolve().parents[2] / "web" / "dist"))
 
 app = FastAPI(title="Poker AI")
+app.include_router(lab_router)
 
 
 @app.get("/api/health")
