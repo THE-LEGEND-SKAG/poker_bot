@@ -10,7 +10,8 @@ where
 * ``eq``          equity vs the opponents' estimated ranges (Monte Carlo),
 * ``R``           equity realisation: 1.0 when no more betting can happen (river,
                   all-in), otherwise 0.95 in position / 0.85 out of position —
-                  future betting lets the player in position realise more,
+                  future betting lets the player in position realise more. Level 3
+                  scales the loss by how aggressive the opponents actually are,
 * ``FE``          probability every opponent folds. With no opponent model each
                   opponent folds ``(risk / (risk + reward)) ** 1.5``. A balanced
                   defender folds exactly ``risk / (risk + reward)`` (which would make
@@ -133,7 +134,10 @@ def candidate_sizes(view: PlayerView) -> list[tuple[str, int]]:
 
 
 def analyze(view: PlayerView, sims: int = 600, rng: random.Random | None = None,
-            fold_model: FoldModel = mdf_fold, opponent_ranges: dict[int, Range] | None = None) -> Analysis:
+            fold_model: FoldModel = mdf_fold, opponent_ranges: dict[int, Range] | None = None,
+            aggression_scale: float = 1.0) -> Analysis:
+    """``aggression_scale`` scales the equity lost to future betting (1 = population
+    default, 0 = opponents never bet, so equity is fully realised)."""
     legal = view.legal
     assert legal is not None, "analysis needs a decision point"
     rng = rng or random.Random()
@@ -159,7 +163,8 @@ def analyze(view: PlayerView, sims: int = 600, rng: random.Random | None = None,
     to_call = legal.to_call
     no_more_betting = view.street is Street.RIVER or not any(not o.all_in for o in opps)
     pos = position_rank(view)
-    R = 1.0 if no_more_betting else (0.95 if pos > 0.5 else 0.85)
+    loss = 0.05 if pos > 0.5 else 0.15  # equity lost to future betting, in / out of position
+    R = 1.0 if no_more_betting else 1.0 - loss * min(1.5, max(0.0, aggression_scale))
 
     a = Analysis(street=view.street.label, equity=eq, pot=pot, to_call=to_call,
                  pot_odds=to_call / (pot + to_call) if to_call else 0.0, realization=R,

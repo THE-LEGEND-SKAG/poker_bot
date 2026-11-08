@@ -23,6 +23,15 @@ _REGISTRY["equity"] = (lambda n, s: EquityAgent(n, s), {"label": "Monte Carlo EV
 _REGISTRY["exploit"] = (lambda n, s: ExploitativeAgent(n, s), {"label": "Exploitative (opponent model)", "level": 3})
 
 
+def _make_cfr(name: str | None, seed: int | None) -> Agent:
+    from .cfr_agent import CFRAgent  # imported lazily: the solver package imports agents.equity
+
+    return CFRAgent(name, seed)
+
+
+_REGISTRY["cfr"] = (_make_cfr, {"label": "CFR blueprint (heads-up)", "level": 4})
+
+
 def register(kind: str, factory: Callable[[str | None, int | None], Agent], label: str, level: int) -> None:
     _REGISTRY[kind] = (factory, {"label": label, "level": level})
 

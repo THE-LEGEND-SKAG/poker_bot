@@ -1,0 +1,27 @@
+{
+ "meta": {
+  "iterations": 4587,
+  "workers": 2,
+  "minutes": 0.3,
+  "infosets": 59608,
+  "stack_bb": 100,
+  "buckets": [
+   169,
+   8,
+   8,
+   10
+  ],
+  "max_raises": [
+   3,
+   2,
+   1,
+   1
+  ],
+  "avg_positive_regret": 0.017478713143582573,
+  "trained_at": "2026-11-08 04:51"
+ },
+ "workers": [
+  [],
+  []
+ ]
+}
