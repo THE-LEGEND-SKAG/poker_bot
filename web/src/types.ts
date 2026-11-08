@@ -91,6 +91,8 @@ export type CoachAnalysis = {
   options: CoachOption[];
   best: CoachOption;
   opponent_ranges: OpponentRange[];
+  spr: number;
+  effective_stack_bb: number;
   stat_labels: Record<string, string>;
 };
 

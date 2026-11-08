@@ -9,9 +9,10 @@ decision onward*, so folding is always 0 (chips already in the pot are sunk).
 where
 * ``eq``          equity vs the opponents' estimated ranges (Monte Carlo),
 * ``R``           equity realisation: 1.0 when no more betting can happen (river,
-                  all-in), otherwise 0.95 in position / 0.85 out of position —
-                  future betting lets the player in position realise more. Level 3
-                  scales the loss by how aggressive the opponents actually are,
+                  all-in). Otherwise it loses 5% in position / 15% out of position,
+                  plus up to 50% more for hands below their fair share of the pot
+                  (weak hands usually fold before showdown). Level 3 scales the loss
+                  by how aggressive the opponents actually are,
 * ``FE``          probability every opponent folds. With no opponent model each
                   opponent folds ``(risk / (risk + reward)) ** 1.5``. A balanced
                   defender folds exactly ``risk / (risk + reward)`` (which would make
@@ -110,7 +111,9 @@ def candidate_sizes(view: PlayerView) -> list[tuple[str, int]]:
     out: list[tuple[str, int]] = []
     if view.street is Street.PREFLOP:
         if view.current_bet <= bb:
-            limpers = sum(1 for o in view.opponents if o.street_commit == bb)
+            # count actual limps (voluntary calls); the big blind's forced post is not a limp
+            limpers = sum(1 for e in view.history if e["type"] == "action" and e["street"] == "preflop"
+                          and e["action"] == "call" and e["seat"] != view.seat)
             out += [("2.5 BB", int(2.5 * bb) + limpers * bb), ("3.5 BB", int(3.5 * bb) + limpers * bb)]
         else:
             out += [("3x", 3 * view.current_bet), ("4x", 4 * view.current_bet)]
@@ -125,11 +128,21 @@ def candidate_sizes(view: PlayerView) -> list[tuple[str, int]]:
     short_preflop = view.street is Street.PREFLOP and legal.stack + legal.street_commit <= 15 * bb
     if spr <= 4 or short_preflop or legal.min_raise_to >= legal.max_raise_to:
         out.append(("All-in", legal.max_raise_to))
+    # Labels describe the FINAL amount: sizes can grow (1 BB per limper) or be bumped
+    # to the minimum legal raise, so a fixed label like "2.5 BB" could be wrong.
     seen: dict[int, str] = {}
-    for label, to in out:
-        to = legal.clamp_raise(to)
-        if to not in seen:
-            seen[to] = "All-in" if to == legal.max_raise_to else label
+    for label, intended in out:
+        to = legal.clamp_raise(intended)
+        if to in seen:
+            continue
+        if to == legal.max_raise_to:
+            seen[to] = "All-in"
+        elif view.street is Street.PREFLOP:
+            seen[to] = f"{to / bb:g} BB"
+        elif to != intended and to == legal.min_raise_to:
+            seen[to] = "min raise" if legal.raise_type is ActionType.RAISE else "min bet"
+        else:
+            seen[to] = label
     return [(lbl, to) for to, lbl in sorted(seen.items())]
 
 
@@ -163,8 +176,13 @@ def analyze(view: PlayerView, sims: int = 600, rng: random.Random | None = None,
     to_call = legal.to_call
     no_more_betting = view.street is Street.RIVER or not any(not o.all_in for o in opps)
     pos = position_rank(view)
-    loss = 0.05 if pos > 0.5 else 0.15  # equity lost to future betting, in / out of position
-    R = 1.0 if no_more_betting else 1.0 - loss * min(1.5, max(0.0, aggression_scale))
+    # Equity lost to future betting: a base amount by position, plus more for weak hands,
+    # which usually have to fold before showdown (they rarely "realise" their raw equity).
+    # Weakness is measured against the fair share of the pot, 1 / (players in the hand).
+    fair = 1.0 / (len(opps) + 1)
+    weakness = max(0.0, fair - eq.equity) / fair  # 0 for average-or-better hands, up to 1
+    loss = (0.05 if pos > 0.5 else 0.15) + 0.5 * weakness
+    R = 1.0 if no_more_betting else 1.0 - min(0.6, loss) * min(1.5, max(0.0, aggression_scale))
 
     a = Analysis(street=view.street.label, equity=eq, pot=pot, to_call=to_call,
                  pot_odds=to_call / (pot + to_call) if to_call else 0.0, realization=R,

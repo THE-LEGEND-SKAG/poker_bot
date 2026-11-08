@@ -29,7 +29,11 @@ export default function Table({ state, thinking }: { state: GameState; thinking:
   const bb = state.big_blind;
   const portrait = useNarrow();
   return (
-    <div className={`relative mx-auto w-full max-w-5xl ${portrait ? "mb-16 mt-4 aspect-[3/4]" : "mb-24 mt-6 aspect-[16/9]"}`}>
+    <div
+      className={`relative mx-auto w-full max-w-5xl ${portrait ? "mb-16 mt-4 aspect-[3/4]" : "mb-20 mt-8 aspect-[16/9]"}`}
+      // Landscape: also limit by window height so the whole table fits between the header and the fixed action dock.
+      style={portrait ? undefined : { maxWidth: "min(64rem, calc((100dvh - 300px) * 16 / 9))" }}
+    >
       <div className={`felt absolute rounded-[50%] ${portrait ? "inset-[10%_12%]" : "inset-[9%_7%]"}`} />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <span className={`select-none font-black tracking-widest text-black/10 ${portrait ? "text-3xl [writing-mode:vertical-rl]" : "text-5xl md:text-7xl"}`}>POKER AI</span>

@@ -98,3 +98,25 @@ def test_candidate_sizes_are_legal_and_unique():
                 for t in tos:
                     assert la.is_legal(Action(la.raise_type, t))
             h.apply(la.raise_action(la.min_raise_to) if la.raise_type and rng.random() < 0.3 else la.passive())
+
+
+def test_size_labels_match_amounts():
+    """Regression: with a limper, the 2.5 BB open is 350 and must be labelled 3.5 BB."""
+    h = rigged_hand([10000] * 3, 0, 50, 100, {})
+    h.apply(Action.call())  # button limps; SB to act
+    h.apply(Action.call())  # SB completes; BB faces two limpers... BB can raise
+    v = h.view(h.to_act)
+    for label, to in candidate_sizes(v):
+        if label.endswith("BB"):
+            assert float(label.split()[0]) * 100 == to, (label, to)
+    rng = random.Random(4)
+    from poker_ai.engine import HandState
+    for _ in range(200):  # labels always describe the real amount
+        h = HandState([rng.randint(300, 20000) for _ in range(4)], 0, 50, 100, rng=rng)
+        while not h.terminal:
+            la = h.legal_actions()
+            if la.raise_type is not None and h.street.label == "preflop":
+                for label, to in candidate_sizes(h.view(h.to_act)):
+                    if label.endswith(" BB"):
+                        assert abs(float(label.split()[0]) * 100 - to) < 1e-6
+            h.apply(la.passive() if rng.random() < 0.8 or la.raise_type is None else la.raise_action(la.min_raise_to))

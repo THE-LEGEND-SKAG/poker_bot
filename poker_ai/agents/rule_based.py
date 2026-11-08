@@ -86,7 +86,8 @@ class RuleBasedAgent(Agent):
 
         if not raised:
             if adj >= p.open_threshold and legal.can_raise and self.rng.random() < max(p.aggression, 0.8):
-                limpers = sum(1 for o in view.opponents if o.street_commit == bb)
+                limpers = sum(1 for e in view.history if e["type"] == "action" and e["street"] == "preflop"
+                              and e["action"] == "call" and e["seat"] != view.seat)  # the BB's post is not a limp
                 return bet_bb(view, 2.5 + limpers), {**why, "rule": "open raise"}
             if legal.can_check:
                 return Action.check(), {**why, "rule": "check option"}

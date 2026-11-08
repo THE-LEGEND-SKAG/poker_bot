@@ -144,16 +144,18 @@ export default function CoachPanel({ state, analysis, enabled, onToggle }: Props
                 <div className="text-[10px] uppercase text-slate-400">Pot odds (need)</div>
                 <div className="text-lg font-bold tabular-nums">{analysis.to_call > 0 ? pct(analysis.pot_odds, 1) : "—"}</div>
               </div>
-              <div className="rounded-lg bg-slate-900 p-2">
-                <div className="text-[10px] uppercase text-slate-400">Equity realised</div>
-                <div className="text-lg font-bold tabular-nums">{pct(analysis.realization)}</div>
+              <div className="rounded-lg bg-slate-900 p-2" title="Effective stack divided by the pot: low SPR = committed, high SPR = room to maneuver">
+                <div className="text-[10px] uppercase text-slate-400">Stack-to-pot (SPR)</div>
+                <div className="text-lg font-bold tabular-nums">{analysis.spr >= 100 ? "100+" : analysis.spr.toFixed(1)}</div>
+                <div className="text-[10px] text-slate-500">{analysis.effective_stack_bb} BB effective</div>
               </div>
             </div>
             <Options a={analysis} />
             <RangeHeatmap ranges={analysis.opponent_ranges} labels={analysis.stat_labels} />
             <p className="text-[10px] leading-snug text-slate-500">
               EV is chips gained from this decision onward (fold = 0). Ranges and fold rates come from each opponent's observed
-              actions (Bayesian updates from population priors). A model, not a solver.
+              actions (Bayesian updates from population priors). Before the river the EV assumes you keep most, not all, of
+              your equity (an assumption, scaled by how aggressive opponents are). A model, not a solver.
             </p>
           </>
         )}

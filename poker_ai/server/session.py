@@ -177,6 +177,10 @@ class GameSession:
         view = self.hand.view(HUMAN)
         a, weights = modelled_analysis(view, self.coach_model, sims, random.Random(self.rng.random()), self.np_rng)
         blocked = blocked_mask(list(view.hole) + list(view.board))
+        # stack-to-pot ratio: effective stack (ours vs the deepest live opponent) over the pot after calling
+        me = view.me
+        deepest = max((o.stack for o in view.opponents), default=0)
+        spr = min(me.stack, deepest) / max(1, view.pot + (view.legal.to_call if view.legal else 0))
         opponents = [
             {"seat": seat, "name": self.names[seat], "grid": class_grid(w, blocked),
              "stats": self.coach_model.get(seat).as_dict()}
@@ -190,6 +194,8 @@ class GameSession:
             "preflop_equity_vs_random": preflop_equity(view.hole[0], view.hole[1], max(1, view.num_live - 1)),
             "made_hand": made,
             "opponent_ranges": opponents,
+            "spr": round(spr, 2),
+            "effective_stack_bb": round(min(me.stack, deepest) / view.big_blind, 1),
             "stat_labels": STAT_LABELS,
             **a.as_dict(),
         }

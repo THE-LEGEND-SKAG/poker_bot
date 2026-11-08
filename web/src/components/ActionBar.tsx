@@ -44,8 +44,8 @@ export default function ActionBar({ state, onAct }: Props) {
   const verb = legal.raise_type === "bet" ? "Bet" : "Raise to";
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/85 p-3 shadow-2xl backdrop-blur md:flex-row md:items-center">
-      <div className="flex gap-2">
+    <div className="mx-auto grid w-full max-w-4xl grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 p-2 shadow-2xl backdrop-blur md:flex md:items-center md:gap-3 md:p-3">
+      <div className="flex gap-2 [&>button]:flex-1 md:[&>button]:flex-none">
         {legal.can_fold && (
           <button onClick={() => onAct("fold")} className="btn bg-red-600 hover:bg-red-500" title="F">
             Fold
@@ -63,7 +63,7 @@ export default function ActionBar({ state, onAct }: Props) {
         )}
       </div>
       {legal.raise_type && (
-        <div className="flex flex-1 flex-col gap-2">
+        <div className="order-first col-span-2 flex flex-1 flex-col gap-1.5 md:order-none md:gap-2">
           <div className="flex flex-wrap gap-1.5">
             {presets.map(([label, v]) => (
               <button key={label} onClick={() => setAmount(v)} className="rounded-md bg-slate-800 px-2 py-1 text-xs font-semibold hover:bg-slate-700">
@@ -97,7 +97,7 @@ export default function ActionBar({ state, onAct }: Props) {
         </div>
       )}
       {legal.raise_type && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 [&>button]:flex-1 md:[&>button]:flex-none">
           <button onClick={() => onAct(legal.raise_type!, Math.max(legal.min_raise_to, Math.min(amount, legal.max_raise_to)))} className="btn bg-blue-600 hover:bg-blue-500" title="R">
             {allIn ? "All-in" : `${verb} ${amount.toLocaleString()}`}
           </button>

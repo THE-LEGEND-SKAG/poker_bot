@@ -73,9 +73,10 @@ export default function App() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
-        <main className="flex min-w-0 flex-1 flex-col justify-center gap-3">
+        <main className="flex min-w-0 flex-1 flex-col justify-center gap-3 pb-44 md:pb-32">
           <Table state={s} thinking={game.thinking} />
-          <div className="min-h-20">
+          {/* Fixed dock: the action buttons are always on screen, whatever the window height. */}
+          <div className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent px-2 pt-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:right-[21.5rem]">
             {s.legal ? (
               <ActionBar state={s} onAct={game.act} />
             ) : s.terminal ? (
@@ -91,7 +92,7 @@ export default function App() {
                 )}
               </div>
             ) : (
-              <div className="text-center text-sm text-slate-400">Waiting for opponents…</div>
+              <div className="py-3 text-center text-sm text-slate-400">Waiting for opponents…</div>
             )}
           </div>
         </main>

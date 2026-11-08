@@ -39,6 +39,6 @@ input[type="range"].bet-slider { accent-color: #f59e0b; }
 
 @layer components {
   .btn {
-    @apply rounded-xl px-5 py-2.5 font-bold text-white shadow-lg transition active:scale-95;
+    @apply rounded-xl px-2.5 py-2 text-sm font-bold whitespace-nowrap text-white shadow-lg transition active:scale-95 md:px-5 md:py-2.5 md:text-base;
   }
 }
