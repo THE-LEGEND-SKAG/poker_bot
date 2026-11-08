@@ -4,10 +4,10 @@ A playable No-Limit Texas Hold'em platform: a rules-exact engine, a ladder of
 AI opponents (rule-based → Monte Carlo → exploitative → CFR blueprint → neural
 PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 
-> **Status:** Milestones 1–7 complete: the engine, a playable web table with a Coach,
-> five bot levels (rule-based → Monte Carlo EV → exploitative → CFR blueprint → PPO
-> neural), duplicate tournaments and a Lab dashboard. Milestone 8 (multi-way polish)
-> is the remaining ☐ row and is not claimed to work beyond what the tests cover.
+> **Status:** all 8 milestones complete: the engine, a playable web table (2–9 players,
+> desktop and phone) with a Coach, five bot levels (rule-based → Monte Carlo EV →
+> exploitative → CFR blueprint → PPO neural), duplicate tournaments, multi-way ring
+> evaluation and a Lab dashboard. Limitations are listed honestly at the end.
 
 ![Three-way all-in with a side pot](docs/table-showdown.png)
 
@@ -22,7 +22,7 @@ PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 | 5 | CFR: verified on Kuhn (game value −1/18) and Leduc via exploitability, then MCCFR blueprint for abstracted heads-up NLHE | ✅ done |
 | 6 | Neural agent: PPO with action masking, equity feature, league training | ✅ done |
 | 7 | Duplicate tournaments, bb/100 with 95% CIs, Lab dashboard | ✅ done |
-| 8 | 3-player / 6-max polish, end-to-end checks, screenshots | ☐ |
+| 8 | 3-player / 6-max polish, end-to-end checks, screenshots | ✅ done |
 
 ## Architecture
 
@@ -361,6 +361,106 @@ beats every opponent.**
 Charts use a palette validated for colour-vision deficiency on the app's dark
 surface. Each bot keeps the same colour everywhere, and every chart has hover
 tooltips.
+
+## Multi-way play and final checks (Milestone 8)
+
+**Ring-game evaluation** (`sim/ring.py`): for 3–9 players, each deal is replayed
+once per button position, so every bot plays every position with that position's
+cards and luck largely cancels. Two pitfalls were found and fixed while building
+it:
+
+1. Rotating *bots* through seats every hand scrambled opponent models, which are
+   keyed by seat.
+2. Fixed seating biases results, because a bot is always stuck directly after the
+   same maniac.
+
+The final design plays blocks of deals, each with a random seating order and
+fresh bots. Three identical bots net exactly 0 (a test checks this).
+
+```bash
+python -m poker_ai.sim.ring --agents neural cfr exploit equity rule_balanced rule_lag --deals 600
+```
+
+| Bot | 3-handed bb/100 | 6-max bb/100 |
+|-----|-----------------|--------------|
+| Neural (PPO) · L5 | **+406 ± 151** | −101 ± 143 |
+| CFR · L4 (falls back to L3 multi-way) | −163 ± 140 | +46 ± 107 |
+| Exploitative · L3 | −243 ± 129 | **+167 ± 102** |
+| Monte Carlo EV · L2 | — | +27 ± 102 |
+| Rule-based Balanced / Loose-Aggressive · L1 | — | −39 ± 69 / −99 ± 97 |
+
+3,600 hands each, 10–12 seatings. Read these with their intervals:
+
+* Three-handed, the hyper-aggressive neural policy wins when opponents' models
+  restart every 300 hands. With 3,600 hands of continuous learning (same
+  seating), Level 3 beat it instead (+131 ± 108 vs +93 ± 148).
+* At 6-max, Level 3 is the only significant winner.
+* CFR and Level 3 play identically multi-way, by design.
+
+**Table layouts**: 2–9 players on desktop, plus a portrait layout on phones
+(compact seats and smaller cards), with no horizontal overflow.
+
+![9-handed table](docs/table-9-handed.png)
+
+<img src="docs/phone.png" width="260" alt="Phone layout">
+
+**End-to-end test** (`web/e2e/smoke.mjs`) plays real hands through the browser:
+
+* 6-max on desktop, and heads-up at phone width;
+* it raises when it can and rebuys when busted;
+* it fails on any browser error, horizontal overflow or a stuck table;
+* finally it opens the Lab.
+
+Run it with the server up:
+
+```bash
+cd web && npx playwright install chromium && npm run e2e
+```
+
+**Clean-environment check**, done for this release:
+
+1. Fresh `git clone` and a new virtualenv **without PyTorch**.
+2. `pip install -e ".[dev,server]"` → 147 tests pass; 1 is skipped (the
+   PyTorch-only NumPy-vs-PyTorch check).
+3. `npm ci && npm run build` succeeds.
+4. The e2e test passes against that install.
+
+## Acceptance criteria
+
+| # | Criterion | Evidence |
+|---|-----------|----------|
+| 1 | A human can play complete games against AI | Web table, 2–9 players; e2e test plays full hands |
+| 2 | Rules and betting are correct | 50k-hand random stress test with an independent pot check; side pots, incomplete raises, refunds unit-tested |
+| 3 | Distinct AIs share one engine | 9 agent kinds; every action is validated by `HandState.apply` |
+| 4 | Monte Carlo equity works | Matches published equities (AA 85.2%, KK 82.4%, 72o 34.6%) |
+| 5 | A strategic agent is usable | Level 3 (opponent model) and Level 4 (CFR) in the lobby |
+| 6 | A neural agent is trained and its saved model loads | `scripts/train_neural.py`; `data/neural_policy.npz` loads without PyTorch |
+| 7 | Automated tournaments | `sim/tournament.py`, `sim/ring.py`, and the Lab form |
+| 8 | Metrics can be inspected | Lab: bb/100 ± CI, VPIP, PFR, AF, fold %, WTSD, W$SD, pot size, decision time |
+| 9 | Interface works reliably | e2e test on desktop and phone; WebSocket tests |
+| 10 | Tests cover edge cases | 148 tests (`pytest`) |
+| 11 | Clean install works | Fresh clone + venv check above |
+
+## Limitations (honest)
+
+* **Heads-up specialists:** the CFR blueprint covers heads-up only (100 BB,
+  coarse bet sizes) and falls back to Level 3 multi-way. The PPO agent was trained
+  heads-up only and is weaker at 6-max.
+* **Abstraction:** the blueprint is an approximate equilibrium of a *simplified*
+  game, so its exploitability in real No-Limit Hold'em is unknown. Real bet sizes
+  are mapped to the nearest abstract sizes.
+* **Level 2 and 3 EV models** look one street ahead, with future betting entering
+  only through the realisation factor.
+* **Neural policy:** strong against the bots it trained with, but exploitable by
+  bots that adapt (Level 3) or play near-equilibrium (Level 4).
+* **Statistics:** all results are bot-vs-bot at 100 BB. Many 6-max differences
+  are within noise at the sample sizes shown.
+* **Sessions:** game sessions live in server memory, so a restart ends any game
+  in progress (on Render's free tier the server also sleeps when idle).
+* **Rules:** no burn cards, no dead-button rule, and a short big blind still
+  makes others call the full blind.
+* **Known warning:** newer Starlette prints a deprecation warning about `httpx`
+  in tests; it has no functional effect.
 
 ## Install & test
 

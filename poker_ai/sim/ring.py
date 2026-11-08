@@ -4,9 +4,14 @@ Each deal is replayed once per button position: with ``n`` agents the same deck
 is played ``n`` times, moving the button one seat each time. Cards are dealt by
 position, so across the rotations every agent receives every position's cards
 and plays every position; summing its results cancels most card and position
-luck (the multi-way analogue of duplicate). Agents stay in fixed seats, so
-opponent models keyed by seat stay valid (rotating the *agents* through seats
-would scramble them). Stacks reset to ``stack_bb`` every hand.
+luck (the multi-way analogue of duplicate). Within a block of deals agents stay
+in fixed seats, so opponent models keyed by seat stay valid (rotating the
+*agents* through seats every hand would scramble them).
+
+Fixed seating has its own bias: relative positions never change (e.g. always
+acting directly after the same maniac). So deals are split into ``seatings``
+blocks, each with a different random seating order and freshly created agents
+(a new session); results are pooled over all blocks. Stacks reset every hand.
 """
 
 from __future__ import annotations
@@ -26,26 +31,33 @@ from .stats import PlayStats
 BB = 100
 
 
-def ring_match(kinds: list[str], deals: int, seed: int = 0, stack_bb: int = 100) -> dict[str, Any]:
+def ring_match(kinds: list[str], deals: int, seed: int = 0, stack_bb: int = 100, seatings: int = 6) -> dict[str, Any]:
     n = len(kinds)
     if not 3 <= n <= 9:
         raise ValueError("ring games need 3-9 agents")
-    agents = [make_agent(k, seed=seed + i) for i, k in enumerate(kinds)]
     rng = random.Random(seed)
+    seatings = max(1, min(seatings, deals))
     per_deal: list[list[float]] = [[] for _ in range(n)]
     stats = [PlayStats() for _ in range(n)]
     t0 = time.time()
+    seat_of: list[int] = list(range(n))  # agent index -> seat
+    by_seat: dict = {}
     for d in range(deals):
+        if d % max(1, deals // seatings) == 0:  # new block: new seating order, fresh agents
+            perm = list(range(n))
+            if d:
+                rng.shuffle(perm)
+            seat_of = perm
+            by_seat = {seat_of[i]: make_agent(k, seed=seed + 1000 * d + i) for i, k in enumerate(kinds)}
         order = list(range(52))
         rng.shuffle(order)
         totals = [0.0] * n
-        by_seat = dict(enumerate(agents))  # fixed seats
         for button in range(n):
             h = HandState([stack_bb * BB] * n, button, BB // 2, BB, deck=Deck.from_order(order), hand_id=d)
             play_hand(h, by_seat)
             for i in range(n):
-                totals[i] += h.net[i]
-                stats[i].add_hand(h, i, BB)
+                totals[i] += h.net[seat_of[i]]
+                stats[i].add_hand(h, seat_of[i], BB)
         for i in range(n):
             per_deal[i].append(totals[i] / n / BB)
     rows = []
@@ -56,7 +68,8 @@ def ring_match(kinds: list[str], deals: int, seed: int = 0, stack_bb: int = 100)
         rows.append({"kind": k, "bb100": round(mean * 100, 1), "ci95": round(196 * sd / math.sqrt(len(xs)), 1),
                      **stats[i].summary(BB)})
     rows.sort(key=lambda r: r["bb100"], reverse=True)
-    return {"agents": kinds, "deals": deals, "hands": deals * n, "seconds": round(time.time() - t0, 1), "results": rows}
+    return {"agents": kinds, "deals": deals, "hands": deals * n, "seatings": seatings,
+            "seconds": round(time.time() - t0, 1), "results": rows}
 
 
 def main() -> None:
@@ -64,9 +77,10 @@ def main() -> None:
     p.add_argument("--agents", nargs="+", required=True)
     p.add_argument("--deals", type=int, default=200)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--seatings", type=int, default=6, help="blocks with different random seating orders")
     a = p.parse_args()
-    r = ring_match(a.agents, a.deals, a.seed)
-    print(f"{len(a.agents)}-handed ring, {r['hands']} hands ({r['seconds']}s)")
+    r = ring_match(a.agents, a.deals, a.seed, seatings=a.seatings)
+    print(f"{len(a.agents)}-handed ring, {r['hands']} hands, {r['seatings']} seatings ({r['seconds']}s)")
     for row in r["results"]:
         print(f"  {row['kind']:16s} {row['bb100']:+8.1f} ± {row['ci95']:6.1f} bb/100   VPIP {row['vpip']:.0%}  PFR {row['pfr']:.0%}  fold {row['fold_frequency']:.0%}")
 
