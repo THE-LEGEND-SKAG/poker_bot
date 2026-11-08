@@ -32,6 +32,15 @@ def _make_cfr(name: str | None, seed: int | None) -> Agent:
 _REGISTRY["cfr"] = (_make_cfr, {"label": "CFR blueprint (heads-up)", "level": 4})
 
 
+def _make_neural(name: str | None, seed: int | None) -> Agent:
+    from .neural_agent import NeuralAgent
+
+    return NeuralAgent(name, seed)
+
+
+_REGISTRY["neural"] = (_make_neural, {"label": "Neural (PPO)", "level": 5})
+
+
 def register(kind: str, factory: Callable[[str | None, int | None], Agent], label: str, level: int) -> None:
     _REGISTRY[kind] = (factory, {"label": label, "level": level})
 

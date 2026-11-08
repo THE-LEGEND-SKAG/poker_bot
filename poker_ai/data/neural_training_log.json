@@ -1,0 +1,273 @@
+{
+ "meta": {
+  "updates": 6,
+  "decisions": 6152,
+  "minutes": 0.4,
+  "workers": 2,
+  "trained_at": "2026-11-08 05:01",
+  "final_eval": {
+   "update": 6,
+   "final": true,
+   "rule_balanced": {
+    "bb100": -226.1,
+    "ci95": 322.7,
+    "hands": 160
+   },
+   "rule_tight": {
+    "bb100": -250.3,
+    "ci95": 322.1,
+    "hands": 160
+   },
+   "rule_lag": {
+    "bb100": 85.9,
+    "ci95": 423.5,
+    "hands": 160
+   },
+   "calling_station": {
+    "bb100": 516.2,
+    "ci95": 659.7,
+    "hands": 160
+   }
+  },
+  "obs_dim": 155,
+  "status": "partially trained"
+ },
+ "history": [
+  {
+   "update": 1,
+   "seconds": 4.8,
+   "decisions": 1024,
+   "hands": 597,
+   "bb100_all": -325.4,
+   "bb100_by_opponent": {
+    "rule_lag": -213.4,
+    "random": -278.5,
+    "rule_balanced": -226.8,
+    "rule_tight": -293.1,
+    "equity": -538.2,
+    "calling_station": -465.4
+   },
+   "pl": -0.0005,
+   "vl": 0.233,
+   "ent": 1.4664,
+   "kl": -0.0002,
+   "clip": 0.0,
+   "action_freq": [
+    121,
+    216,
+    239,
+    239,
+    209
+   ]
+  },
+  {
+   "update": 2,
+   "seconds": 9.9,
+   "decisions": 2051,
+   "hands": 627,
+   "bb100_all": -359.1,
+   "bb100_by_opponent": {
+    "rule_balanced": -289.7,
+    "rule_lag": -401.5,
+    "rule_tight": -310.4,
+    "calling_station": -764.2,
+    "random": 438.5,
+    "equity": -564.9
+   },
+   "pl": -0.009,
+   "vl": 0.2653,
+   "ent": 1.4442,
+   "kl": 0.001,
+   "clip": 0.0,
+   "action_freq": [
+    122,
+    236,
+    218,
+    223,
+    228
+   ]
+  },
+  {
+   "update": 3,
+   "seconds": 13.8,
+   "decisions": 3076,
+   "hands": 641,
+   "bb100_all": -320.3,
+   "bb100_by_opponent": {
+    "rule_lag": -676.1,
+    "equity": -420.2,
+    "rule_balanced": -331.8,
+    "calling_station": -1419.6,
+    "rule_tight": -417.3,
+    "random": 64.9
+   },
+   "pl": -0.0249,
+   "vl": 0.1937,
+   "ent": 1.3805,
+   "kl": -0.0001,
+   "clip": 0.0,
+   "action_freq": [
+    179,
+    237,
+    187,
+    227,
+    195
+   ]
+  },
+  {
+   "update": 4,
+   "seconds": 18.3,
+   "decisions": 4100,
+   "hands": 607,
+   "bb100_all": 32.4,
+   "bb100_by_opponent": {
+    "calling_station": 515.1,
+    "equity": -73.1,
+    "rule_lag": -69.8,
+    "random": -850.7,
+    "rule_tight": 128.0,
+    "rule_balanced": -304.9
+   },
+   "pl": -0.0002,
+   "vl": 0.2717,
+   "ent": 1.4413,
+   "kl": 0.0,
+   "clip": 0.0,
+   "action_freq": [
+    143,
+    225,
+    213,
+    233,
+    210
+   ]
+  },
+  {
+   "update": 5,
+   "seconds": 23.0,
+   "decisions": 5125,
+   "hands": 618,
+   "bb100_all": -145.9,
+   "bb100_by_opponent": {
+    "equity": -1566.7,
+    "calling_station": 608.7,
+    "rule_lag": -150.1,
+    "rule_balanced": -440.6,
+    "rule_tight": -418.6,
+    "random": 1201.0
+   },
+   "pl": 0.0664,
+   "vl": 0.2289,
+   "ent": 1.4595,
+   "kl": -0.0031,
+   "clip": 0.0,
+   "action_freq": [
+    175,
+    232,
+    211,
+    205,
+    202
+   ]
+  },
+  {
+   "update": 6,
+   "seconds": 27.6,
+   "decisions": 6152,
+   "hands": 679,
+   "bb100_all": -92.7,
+   "bb100_by_opponent": {
+    "rule_balanced": -209.7,
+    "rule_lag": -982.2,
+    "rule_tight": 83.5,
+    "calling_station": -144.0,
+    "equity": -582.1,
+    "random": -69.1
+   },
+   "pl": -0.1088,
+   "vl": 0.3594,
+   "ent": 1.4812,
+   "kl": 0.0005,
+   "clip": 0.0,
+   "action_freq": [
+    172,
+    230,
+    197,
+    206,
+    222
+   ]
+  }
+ ],
+ "evals": [
+  {
+   "update": 3,
+   "final": false,
+   "rule_balanced": {
+    "bb100": -427.5,
+    "ci95": 985.2,
+    "hands": 40
+   },
+   "rule_tight": {
+    "bb100": -452.5,
+    "ci95": 681.2,
+    "hands": 40
+   },
+   "rule_lag": {
+    "bb100": 148.8,
+    "ci95": 728.8,
+    "hands": 40
+   },
+   "calling_station": {
+    "bb100": 177.5,
+    "ci95": 1434.4,
+    "hands": 40
+   }
+  },
+  {
+   "update": 6,
+   "final": false,
+   "rule_balanced": {
+    "bb100": -167.5,
+    "ci95": 865.6,
+    "hands": 40
+   },
+   "rule_tight": {
+    "bb100": -490.0,
+    "ci95": 678.1,
+    "hands": 40
+   },
+   "rule_lag": {
+    "bb100": 302.5,
+    "ci95": 489.6,
+    "hands": 40
+   },
+   "calling_station": {
+    "bb100": 1440.0,
+    "ci95": 1338.8,
+    "hands": 40
+   }
+  },
+  {
+   "update": 6,
+   "final": true,
+   "rule_balanced": {
+    "bb100": -226.1,
+    "ci95": 322.7,
+    "hands": 160
+   },
+   "rule_tight": {
+    "bb100": -250.3,
+    "ci95": 322.1,
+    "hands": 160
+   },
+   "rule_lag": {
+    "bb100": 85.9,
+    "ci95": 423.5,
+    "hands": 160
+   },
+   "calling_station": {
+    "bb100": 516.2,
+    "ci95": 659.7,
+    "hands": 160
+   }
+  }
+ ]
+}
