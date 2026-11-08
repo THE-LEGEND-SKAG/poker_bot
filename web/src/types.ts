@@ -52,6 +52,44 @@ export type GameState = {
   log: LogLine[];
   hands_played: number;
   human_busted: boolean;
+  decision_id: string;
+  review: ReviewItem[] | null;
+};
+
+export type ReviewItem = {
+  seat: number;
+  name: string;
+  street: string;
+  action: string;
+  rule: string | null;
+  revealed: boolean;
+  details?: Record<string, unknown>;
+};
+
+export type CoachOption = {
+  action: string;
+  amount: number;
+  label: string;
+  ev: number;
+  fold_equity: number;
+  equity_when_called: number | null;
+};
+
+export type CoachAnalysis = {
+  decision_id: string;
+  hand_class: string;
+  preflop_equity_vs_random: number;
+  made_hand: string | null;
+  street: string;
+  equity: { equity: number; win: number; tie: number; samples: number; exact: boolean; stderr: number };
+  pot: number;
+  to_call: number;
+  pot_odds: number;
+  realization: number;
+  opponents: number;
+  range_note: string;
+  options: CoachOption[];
+  best: CoachOption;
 };
 
 export type AgentInfo = { kind: string; label: string; level: number };

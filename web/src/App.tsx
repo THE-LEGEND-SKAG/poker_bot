@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ActionBar from "./components/ActionBar";
+import CoachPanel from "./components/CoachPanel";
 import Lobby from "./components/Lobby";
 import LogPanel from "./components/LogPanel";
 import Table from "./components/Table";
@@ -8,6 +9,8 @@ import { useGame } from "./useGame";
 export default function App() {
   const game = useGame();
   const [inGame, setInGame] = useState(false);
+  const [tab, setTab] = useState<"coach" | "history">("coach");
+  const [coachOn, setCoachOn] = useState(true);
   const s = game.state;
 
   if (!inGame || !s) {
@@ -64,8 +67,33 @@ export default function App() {
             )}
           </div>
         </main>
-        <aside className="h-72 lg:h-auto lg:w-80">
-          <LogPanel log={s.log} />
+        <aside className="flex h-[28rem] flex-col gap-2 lg:h-auto lg:w-80">
+          <div className="flex gap-1 rounded-xl bg-slate-900 p-1 text-sm font-semibold">
+            {(["coach", "history"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 rounded-lg py-1.5 capitalize ${tab === t ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
+              >
+                {t === "history" ? "Hand history" : "Coach"}
+              </button>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1">
+            {tab === "coach" ? (
+              <CoachPanel
+                state={s}
+                analysis={game.coach}
+                enabled={coachOn}
+                onToggle={(on) => {
+                  setCoachOn(on);
+                  game.setCoachEnabled(on);
+                }}
+              />
+            ) : (
+              <LogPanel log={s.log} />
+            )}
+          </div>
         </aside>
       </div>
 

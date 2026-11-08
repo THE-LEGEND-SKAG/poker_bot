@@ -7,7 +7,9 @@ client -> server
     {"type": "action", "action": "fold|check|call|bet|raise", "amount": 300}
     {"type": "next_hand"}
     {"type": "rebuy"}
+    {"type": "set_coach", "enabled": true}
 server -> client
+    {"type": "coach", "analysis": {...}}       Level 2 analysis of *your* decision
     {"type": "state", "state": {...}}          after every change
     {"type": "thinking", "seat": 3}            a bot is deciding
     {"type": "error", "message": "..."}
@@ -49,6 +51,7 @@ class Connection:
         self.ws = ws
         self.session: GameSession | None = None
         self.bot_delay = 0.7
+        self.coach_enabled = True
 
     async def send_state(self) -> None:
         assert self.session is not None
@@ -62,6 +65,14 @@ class Connection:
             await asyncio.sleep(self.bot_delay)
             await asyncio.to_thread(s.bot_step)  # heavier bots must not block the event loop
             await self.send_state()
+
+    async def send_coach(self) -> None:
+        s = self.session
+        if s is None or not self.coach_enabled or s.to_act != 0:
+            return
+        analysis = await asyncio.to_thread(s.coach)
+        if analysis is not None and analysis["decision_id"] == s.decision_id:  # still the same decision
+            await self.ws.send_json({"type": "coach", "analysis": analysis})
 
     async def handle(self, msg: dict[str, Any]) -> None:
         kind = msg.get("type")
@@ -81,10 +92,15 @@ class Connection:
         elif kind == "set_speed":
             self.bot_delay = max(0.0, min(3.0, float(msg.get("bot_delay_ms", 700)) / 1000))
             return
+        elif kind == "set_coach":
+            self.coach_enabled = bool(msg.get("enabled", True))
+            await self.send_coach()
+            return
         else:
             raise RuntimeError(f"unknown message type {kind!r}")
         await self.send_state()
         await self.run_bots()
+        await self.send_coach()
 
 
 @app.websocket("/ws")

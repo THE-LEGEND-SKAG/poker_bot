@@ -4,8 +4,8 @@ A playable No-Limit Texas Hold'em platform: a rules-exact engine, a ladder of
 AI opponents (rule-based → Monte Carlo → exploitative → CFR blueprint → neural
 PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 
-> **Status:** Milestones 1–2 complete: the engine and a playable web table against
-> rule-based bots. Rows marked ☐ are **not built yet** and are not claimed to work.
+> **Status:** Milestones 1–3 complete: the engine, a playable web table, rule-based and
+> Monte Carlo EV bots, and a Coach panel. Rows marked ☐ are **not built yet** and are not claimed to work.
 
 ![Three-way all-in with a side pot](docs/table-showdown.png)
 
@@ -15,7 +15,7 @@ PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 |---|-----------|--------|
 | 1 | Engine: evaluator, betting, all-ins, side pots, randomised chip-conservation stress test | ✅ done |
 | 2 | Rule-based bots + playable table UI (FastAPI + React vertical slice) | ✅ done, 94 tests total |
-| 3 | Monte Carlo equity bot + Coach panel (equity, pot odds, EV per action) | ☐ |
+| 3 | Monte Carlo equity bot + Coach panel (equity, pot odds, EV per action) | ✅ done |
 | 4 | Opponent modelling (Bayesian stats, range narrowing) + 13×13 range heatmap | ☐ |
 | 5 | CFR: verified on Kuhn (game value −1/18) and Leduc via exploitability, then MCCFR blueprint for abstracted heads-up NLHE | ☐ |
 | 6 | Neural agent: PPO with action masking, equity feature, league training | ☐ |
@@ -27,12 +27,12 @@ PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 ```
 poker_ai/
   engine/      cards, hand evaluator, actions + legality, game state, pots, table   ✅
-  agents/      random, calling station, rule_based (3 personalities) ✅ · equity, exploitative, cfr, neural ☐
+  agents/      random, calling station, rule_based, equity/EV ✅ · exploitative, cfr, neural ☐
   solvers/     cfr (Kuhn/Leduc/HUNL), abstraction, exploitability                   ☐
   learning/    networks, ppo, league, checkpoints                                   ☐
   sim/         hand/session runner ✅ · duplicate matches, tournaments, CIs ☐
   server/      FastAPI + WebSocket game sessions                                    ✅
-web/           React + Tailwind + Framer Motion: Table ✅ · Coach panel, Lab ☐
+web/           React + Tailwind + Framer Motion: Table, Coach ✅ · range heatmap, Lab ☐
 tests/
 ```
 
@@ -124,6 +124,51 @@ current hand strength, counts outs for draws, and compares the result with pot o
 There are three personalities (Tight / Balanced / Loose-Aggressive), with different
 thresholds, aggression, bluff frequency and bet size. Every decision records the rule
 that fired in `last_explanation`, which the Coach panel will use.
+
+## Level 2: Monte Carlo EV bot and the Coach (Milestone 3)
+
+**Equity** (`agents/equity.py`): our expected share of the pot against each opponent's
+holding, drawn at random or from a range. Ties are split. On the river against one
+opponent it enumerates every holding exactly; otherwise it samples (about 1,000
+samples in 10 ms) and reports a standard error. It reproduces published values:
+AA 85.2%, KK 82.4%, AKo 65.4%, 72o 34.6% against one random hand. A precomputed
+table (`data/preflop_equity.json`) holds the equity of all 169 starting hands
+against 1–5 opponents; rebuild it with `python scripts/build_preflop_table.py`.
+
+**EV model** (`agents/ev.py`): EV is the expected change in our stack from this
+decision onward, so folding is always 0.
+
+* call: `R·eq·(pot + call) − call`
+* bet/raise to X: `FE·pot + (1−FE)·(R·eq_called·(final pot) − our chips)`
+
+What the terms mean:
+
+* `R` (equity realisation): 1.0 on the river or all-in, 0.95 in position, 0.85 out of position.
+* `FE` (fold equity): the chance every opponent folds. Each opponent folds
+  `(risk/(risk+reward))^1.5`. A game-theory-balanced defender folds exactly
+  `risk/(risk+reward)`, which would make every pure bluff break even; real players
+  call more than that, so here pure bluffs lose money.
+* `eq_called`: equity against only the hands that continue (the top `1−f` of the caller's range).
+* A bettor's range narrows with the size of the bet.
+
+Sizes considered are 2.5/3.5 BB or 3×/4× preflop, and ½ / ¾ / pot postflop. All-in
+is considered only when the stack is at most 4× the pot or 15 BB preflop, because a
+one-street model can't see the value a smaller bet wins on later streets.
+
+The **Level 2 bot** plays the highest-EV action, choosing at random among options
+within 2% of the pot of the best one.
+
+**Coach panel** (toggle in the sidebar): on your turn it runs the same model on
+*your* hand. It shows your equity (with the pot odds you need marked on the bar),
+your made hand, and the EV of every action, with fold equity and equity-if-called
+for each bet size. After each hand it reveals the bots' reasoning. Numbers that
+depend on a bot's hidden cards are shown only if those cards were revealed at
+showdown, so the coach never leaks information.
+
+**Known limitations:** EV covers one street (future streets enter only through `R`).
+Postflop ranges are ranked by made-hand strength, so draws in an opponent's range
+are under-weighted. Without an opponent model, fold rates are population defaults;
+Level 3 replaces them with observed statistics.
 
 ## Install & test
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { GameConfig, GameState } from "./types";
+import type { CoachAnalysis, GameConfig, GameState } from "./types";
 
 type Status = "connecting" | "open" | "closed";
 
@@ -9,6 +9,7 @@ export function useGame() {
   const [state, setState] = useState<GameState | null>(null);
   const [thinking, setThinking] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [coach, setCoach] = useState<CoachAnalysis | null>(null);
 
   useEffect(() => {
     let stopped = false;
@@ -28,6 +29,8 @@ export function useGame() {
         if (msg.type === "state") {
           setState(msg.state);
           setThinking(null);
+        } else if (msg.type === "coach") {
+          setCoach(msg.analysis);
         } else if (msg.type === "thinking") {
           setThinking(msg.seat);
         } else if (msg.type === "error") {
@@ -54,6 +57,9 @@ export function useGame() {
     state,
     thinking,
     error,
+    // only show analysis that belongs to the decision currently on screen
+    coach: coach && state && coach.decision_id === state.decision_id ? coach : null,
+    setCoachEnabled: (enabled: boolean) => send({ type: "set_coach", enabled }),
     newGame: (config: GameConfig, botDelayMs: number) => send({ type: "new_game", config, bot_delay_ms: botDelayMs }),
     act: (action: string, amount?: number) => send({ type: "action", action, amount }),
     nextHand: () => send({ type: "next_hand" }),

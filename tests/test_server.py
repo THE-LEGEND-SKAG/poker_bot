@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from poker_ai.server.app import app
+from poker_ai.engine import Action, ActionType
 from poker_ai.server.session import HUMAN, GameConfig, GameSession
 
 
@@ -94,7 +95,10 @@ def test_websocket_full_flow():
                 hands += 1
                 if state["human_busted"]:
                     ws.send_json({"type": "rebuy"})
-                    assert ws.receive_json()["type"] == "state"
+                    msg = ws.receive_json()
+                    while msg["type"] == "coach":
+                        msg = ws.receive_json()
+                    assert msg["type"] == "state"
                 ws.send_json({"type": "next_hand"})
             elif state["to_act"] == 0:
                 legal = state["legal"]
@@ -106,5 +110,52 @@ def test_websocket_full_flow():
                     state = msg["state"]
                     break
         ws.send_json({"type": "action", "action": "raise", "amount": -5})
-        # either an error (illegal / not our turn) followed by a state
-        assert ws.receive_json()["type"] == "error"
+        # an error (illegal / not our turn); coach messages may arrive first
+        msg = ws.receive_json()
+        while msg["type"] == "coach":
+            msg = ws.receive_json()
+        assert msg["type"] == "error"
+
+
+def test_coach_analyses_only_human_decisions_and_review_waits_for_hand_end():
+    s = GameSession(GameConfig(bots=["equity", "rule_balanced"], seed=11))
+    s.start_hand()
+    checked = 0
+    for _ in range(40):
+        if s.to_act is None:
+            review = s.snapshot()["review"]
+            assert review is not None
+            for item in review:
+                if not item["revealed"]:
+                    assert "details" not in item  # no numbers derived from mucked cards
+            s.start_hand()
+            continue
+        if s.bot_to_act:
+            assert s.coach() is None
+            assert s.snapshot()["review"] is None
+            s.bot_step()
+            continue
+        c = s.coach(sims=200)
+        assert c is not None and c["decision_id"] == s.decision_id
+        assert 0 <= c["equity"]["equity"] <= 1 and c["options"]
+        legal = s.hand.legal_actions()
+        best = c["best"]
+        assert legal.is_legal(Action(ActionType(best["action"]), best["amount"]))
+        checked += 1
+        s.human_act("check" if legal.can_check else "call")
+    assert checked > 3
+
+
+def test_websocket_sends_coach_message():
+    client = TestClient(app)
+    with client.websocket_connect("/ws") as ws:
+        ws.send_json({"type": "new_game", "config": {"bots": ["calling_station"], "seed": 2}, "bot_delay_ms": 0})
+        for _ in range(50):
+            msg = ws.receive_json()
+            if msg["type"] == "coach":
+                assert msg["analysis"]["options"]
+                break
+            if msg["type"] == "state" and msg["state"]["to_act"] == 0:
+                continue
+        else:
+            raise AssertionError("no coach message received")

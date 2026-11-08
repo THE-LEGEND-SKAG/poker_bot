@@ -13,7 +13,9 @@ from typing import Any
 
 from poker_ai.agents import available_agents, make_agent
 from poker_ai.agents.base import Agent
-from poker_ai.engine import Action, ActionType, HandState, Table, TableConfig, card_str
+from poker_ai.agents.ev import analyze
+from poker_ai.agents.preflop import hand_class, preflop_equity
+from poker_ai.engine import Action, ActionType, HandState, Table, TableConfig, card_str, describe, evaluate
 
 HUMAN = 0
 BOT_NAMES = ["Ada", "Blaise", "Carmen", "Dmitri", "Esme", "Farid", "Greta", "Hugo", "Ines"]
@@ -68,6 +70,7 @@ class GameSession:
         self._settled = False
         self.session_net = [0] * n
         self.hands_played = 0
+        self.decisions: list[dict[str, Any]] = []  # bot reasoning for the current hand
 
     # ------------------------------------------------------------- lifecycle
     @property
@@ -96,6 +99,7 @@ class GameSession:
         self._event_cursor = 0
         self._settled = False
         self.last_action = {}
+        self.decisions = []
         self._consume_events()
 
     def rebuy_human(self) -> None:
@@ -143,10 +147,52 @@ class GameSession:
             return None
         assert self.hand is not None
         agent = self.agents[seat]
-        self.hand.apply(agent.act(self.hand.view(seat)))
+        street = self.hand.street.label
+        action = agent.act(self.hand.view(seat))
+        self.hand.apply(action)
+        self.decisions.append({"seat": seat, "name": self.names[seat], "street": street, "action": str(action),
+                               "explanation": agent.last_explanation or {}})
         self._consume_events()
         self._maybe_settle()
         return agent.last_explanation
+
+    @property
+    def decision_id(self) -> str:
+        """Identifies the current decision point (used to discard stale coach results)."""
+        return f"{self.hand.hand_id if self.hand else 0}:{len(self.hand.events) if self.hand else 0}"
+
+    def coach(self, sims: int = 1500) -> dict[str, Any] | None:
+        """Level 2 analysis of the human's own decision. Uses only the human's view."""
+        if self.to_act != HUMAN:
+            return None
+        assert self.hand is not None
+        view = self.hand.view(HUMAN)
+        a = analyze(view, sims=sims, rng=random.Random(self.rng.random()))
+        made = describe(evaluate(list(view.hole) + list(view.board))) if len(view.board) >= 3 else None
+        cls = hand_class(*view.hole)
+        return {
+            "decision_id": self.decision_id,
+            "hand_class": cls,
+            "preflop_equity_vs_random": preflop_equity(view.hole[0], view.hole[1], max(1, view.num_live - 1)),
+            "made_hand": made,
+            **a.as_dict(),
+        }
+
+    def review(self) -> list[dict[str, Any]] | None:
+        """Bots' reasoning, revealed only after the hand. Numbers derived from a
+        bot's hole cards are shown only if those cards were shown at showdown."""
+        if self.hand is None or not self.hand.terminal:
+            return None
+        out = []
+        for d in self.decisions:
+            shown = d["seat"] in self.hand.shown
+            exp = d["explanation"]
+            item = {"seat": d["seat"], "name": d["name"], "street": d["street"], "action": d["action"],
+                    "rule": exp.get("rule"), "revealed": shown}
+            if shown:
+                item["details"] = {k: v for k, v in exp.items() if k not in ("agent", "action", "rule")}
+            out.append(item)
+        return out
 
     def _maybe_settle(self) -> None:
         if self.hand is not None and self.hand.terminal and not self._settled:
@@ -281,4 +327,6 @@ class GameSession:
             "log": self.log[-80:],
             "hands_played": self.hands_played,
             "human_busted": self.human_busted,
+            "decision_id": self.decision_id,
+            "review": self.review(),
         }
