@@ -438,7 +438,7 @@ cd web && npx playwright install chromium && npm run e2e
 | 7 | Automated tournaments | `sim/tournament.py`, `sim/ring.py`, and the Lab form |
 | 8 | Metrics can be inspected | Lab: bb/100 ± CI, VPIP, PFR, AF, fold %, WTSD, W$SD, pot size, decision time |
 | 9 | Interface works reliably | e2e test on desktop and phone; WebSocket tests |
-| 10 | Tests cover edge cases | 148 tests (`pytest`) |
+| 10 | Tests cover edge cases | 149 tests (`pytest`) |
 | 11 | Clean install works | Fresh clone + venv check above |
 
 ## Limitations (honest)
