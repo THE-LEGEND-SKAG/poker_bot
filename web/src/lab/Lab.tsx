@@ -25,6 +25,16 @@ function smooth(points: { x: number; y: number }[], window = 25) {
   });
 }
 
+const short = (labels: Record<string, string>, k: string) =>
+  (labels[k] ?? k).replace(" (heads-up)", "").replace(" (opponent model)", "").replace("Rule-based · ", "");
+
+/** The bot whose worst head-to-head result is best. */
+function robust(t: Tournament) {
+  const worst = (k: string) =>
+    Math.min(...t.matches.filter((m) => m.a === k || m.b === k).map((m) => (m.a === k ? m.bb100 : -m.bb100)));
+  return t.config.agents.map((k) => ({ kind: k, worst: worst(k) })).reduce((a, b) => (b.worst > a.worst ? b : a));
+}
+
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
@@ -103,7 +113,14 @@ export default function Lab() {
         <Tile label="Bots in last tournament" value={tour ? String(tour.config.agents.length) : "—"} note={tour ? `${tour.config.format}, ${tour.config.deals_per_match * 2} hands/match` : undefined} />
         <Tile label="CFR blueprint" value={bp ? `${(bp.iterations / 1000).toFixed(0)}k it` : "—"} note={bp ? `${bp.infosets.toLocaleString()} infosets` : undefined} />
         <Tile label="PPO training" value={ppo ? `${(ppo.decisions / 1e6).toFixed(2)}M` : "—"} note={ppo ? `decisions · ${ppo.updates} updates · ${ppo.status}` : undefined} />
-        <Tile label="Leader" value={tour ? (labels[tour.leaderboard[0].kind] ?? tour.leaderboard[0].kind).replace(" (heads-up)", "") : "—"} note={tour ? `${tour.leaderboard[0].bb100 > 0 ? "+" : ""}${tour.leaderboard[0].bb100} ± ${tour.leaderboard[0].ci95} bb/100` : undefined} />
+        <Tile
+          label="Top average · most robust"
+          value={tour ? short(labels, tour.leaderboard[0].kind) : "—"}
+          note={tour ? (() => {
+            const r = robust(tour);
+            return `+${tour.leaderboard[0].bb100} avg · most robust: ${short(labels, r.kind)} (worst matchup ${r.worst > 0 ? "+" : ""}${Math.round(r.worst)})`;
+          })() : undefined}
+        />
       </div>
 
       {tour ? (
@@ -114,7 +131,7 @@ export default function Lab() {
               {tour.source === "official" ? "Committed benchmark" : "Your run"} · {tour.generated_at}
             </span>
           </div>
-          <Leaderboard rows={tour.leaderboard} status={tour.training_status} />
+          <Leaderboard rows={tour.leaderboard} status={tour.training_status} matches={tour.matches} labels={labels} />
           <Matrix agents={tour.leaderboard.map((r) => r.kind)} labels={labels} matches={tour.matches} />
         </>
       ) : (

@@ -1,10 +1,20 @@
 import { useState } from "react";
 import { INK, agentColor } from "./palette";
-import type { LeaderRow } from "./types";
+import type { LeaderRow, Match } from "./types";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-export default function Leaderboard({ rows, status }: { rows: LeaderRow[]; status: Record<string, string> }) {
+type Props = { rows: LeaderRow[]; status: Record<string, string>; matches: Match[]; labels: Record<string, string> };
+
+/** Each bot's worst head-to-head result: a robustness view the average hides. */
+function worst(kind: string, matches: Match[]) {
+  const rows = matches
+    .filter((m) => m.a === kind || m.b === kind)
+    .map((m) => (m.a === kind ? { vs: m.b, bb: m.bb100, ci: m.ci95 } : { vs: m.a, bb: -m.bb100, ci: m.ci95 }));
+  return rows.reduce((a, b) => (b.bb < a.bb ? b : a), rows[0]);
+}
+
+export default function Leaderboard({ rows, status, matches, labels }: Props) {
   const [hover, setHover] = useState<string | null>(null);
   const lo = Math.min(0, ...rows.map((r) => r.bb100 - r.ci95));
   const hi = Math.max(0, ...rows.map((r) => r.bb100 + r.ci95));
@@ -12,7 +22,7 @@ export default function Leaderboard({ rows, status }: { rows: LeaderRow[]; statu
   const sx = (v: number) => 8 + ((v - lo) / (hi - lo || 1)) * (W - 16);
   return (
     <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/70">
-      <table className="w-full min-w-[900px] text-sm">
+      <table className="w-full min-w-[1040px] text-sm">
         <thead className="text-left text-[11px] uppercase tracking-wider text-slate-400">
           <tr className="border-b border-white/10">
             <th className="px-3 py-2">#</th>
@@ -21,6 +31,7 @@ export default function Leaderboard({ rows, status }: { rows: LeaderRow[]; statu
             <th className="px-3 py-2" style={{ width: W }}>
               95% CI <span className="normal-case tracking-normal text-slate-500">(line = 0)</span>
             </th>
+            <th className="px-3 py-2" title="The bot's worst head-to-head result">Worst matchup</th>
             <th className="px-2 py-2 text-right" title="Voluntarily put money in when facing a price">VPIP</th>
             <th className="px-2 py-2 text-right" title="Preflop raise">PFR</th>
             <th className="px-2 py-2 text-right" title="Postflop (bets + raises) / calls">AF</th>
@@ -56,6 +67,19 @@ export default function Leaderboard({ rows, status }: { rows: LeaderRow[]; statu
                     <circle cx={sx(r.bb100)} cy={9} r={hover === r.kind ? 5 : 4} fill={agentColor(r.kind)} stroke="#0f172a" strokeWidth={2} />
                   </svg>
                 </td>
+                <td className="px-3 py-2 text-xs">
+                  {(() => {
+                    const w = worst(r.kind, matches);
+                    if (!w) return null;
+                    const losing = w.bb + w.ci < 0;
+                    return (
+                      <span className={losing ? "text-red-300" : w.bb - w.ci > 0 ? "text-emerald-300" : "text-slate-400"}>
+                        {w.bb > 0 ? "+" : ""}
+                        {Math.round(w.bb)} <span className="text-slate-500">vs {(labels[w.vs] ?? w.vs).replace("Rule-based · ", "").replace(" (opponent model)", "").replace(" (heads-up)", "")}</span>
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td className="px-2 py-2 text-right text-slate-300">{pct(r.vpip)}</td>
                 <td className="px-2 py-2 text-right text-slate-300">{pct(r.pfr)}</td>
                 <td className="px-2 py-2 text-right text-slate-300">{r.aggression_factor.toFixed(1)}</td>
@@ -70,7 +94,8 @@ export default function Leaderboard({ rows, status }: { rows: LeaderRow[]; statu
         </tbody>
       </table>
       <p className="px-3 py-2 text-[11px] text-slate-500">
-        bb/100 = average of each bot's head-to-head results; bold = 95% interval excludes zero. Stats pooled over all its matches.
+        bb/100 = average of each bot's head-to-head results, so beating weak bots by a lot raises it. Worst matchup shows robustness:
+        green = wins even its hardest matchup, red = significantly loses at least one. Bold = 95% interval excludes zero.
       </p>
     </div>
   );

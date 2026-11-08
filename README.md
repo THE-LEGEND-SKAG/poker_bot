@@ -4,8 +4,10 @@ A playable No-Limit Texas Hold'em platform: a rules-exact engine, a ladder of
 AI opponents (rule-based → Monte Carlo → exploitative → CFR blueprint → neural
 PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 
-> **Status:** Milestones 1–4 complete: the engine, a playable web table, rule-based,
-> Monte Carlo EV and exploitative (opponent-modelling) bots, and a Coach panel with range heatmaps. Rows marked ☐ are **not built yet** and are not claimed to work.
+> **Status:** Milestones 1–7 complete: the engine, a playable web table with a Coach,
+> five bot levels (rule-based → Monte Carlo EV → exploitative → CFR blueprint → PPO
+> neural), duplicate tournaments and a Lab dashboard. Milestone 8 (multi-way polish)
+> is the remaining ☐ row and is not claimed to work beyond what the tests cover.
 
 ![Three-way all-in with a side pot](docs/table-showdown.png)
 
@@ -17,9 +19,9 @@ PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 | 2 | Rule-based bots + playable table UI (FastAPI + React vertical slice) | ✅ done, 94 tests total |
 | 3 | Monte Carlo equity bot + Coach panel (equity, pot odds, EV per action) | ✅ done |
 | 4 | Opponent modelling (Bayesian stats, range narrowing) + 13×13 range heatmap | ✅ done |
-| 5 | CFR: verified on Kuhn (game value −1/18) and Leduc via exploitability, then MCCFR blueprint for abstracted heads-up NLHE | ☐ |
-| 6 | Neural agent: PPO with action masking, equity feature, league training | ☐ |
-| 7 | Duplicate tournaments, bb/100 with 95% CIs, Lab dashboard | ☐ |
+| 5 | CFR: verified on Kuhn (game value −1/18) and Leduc via exploitability, then MCCFR blueprint for abstracted heads-up NLHE | ✅ done |
+| 6 | Neural agent: PPO with action masking, equity feature, league training | ✅ done |
+| 7 | Duplicate tournaments, bb/100 with 95% CIs, Lab dashboard | ✅ done |
 | 8 | 3-player / 6-max polish, end-to-end checks, screenshots | ☐ |
 
 ## Architecture
@@ -27,12 +29,13 @@ PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 ```
 poker_ai/
   engine/      cards, hand evaluator, actions + legality, game state, pots, table   ✅
-  agents/      random, calling station, rule_based, equity/EV, exploitative ✅ · cfr, neural ☐
-  solvers/     cfr (Kuhn/Leduc/HUNL), abstraction, exploitability                   ☐
-  learning/    networks, ppo, league, checkpoints                                   ☐
-  sim/         hand/session runner ✅ · duplicate matches, tournaments, CIs ☐
-  server/      FastAPI + WebSocket game sessions                                    ✅
-web/           React + Tailwind + Framer Motion: Table, Coach, range heatmap ✅ · Lab ☐
+  agents/      random, calling station, rule_based, equity/EV, exploitative, cfr, neural ✅
+  solvers/     CFR + exact exploitability (Kuhn, Leduc), abstracted HUNL + MCCFR    ✅
+  learning/    features + masking, PPO actor-critic, league rollouts, NumPy policy ✅
+  sim/         runner, duplicate matches, round-robin tournaments, play stats      ✅
+  server/      FastAPI: WebSocket game sessions + Lab API                           ✅
+  data/        preflop table, CFR curves, MCCFR blueprint, PPO weights, results    ✅
+web/           React + Tailwind + Framer Motion: Table, Coach, range heatmap, Lab  ✅
 tests/
 ```
 
@@ -42,7 +45,7 @@ validates every action against it and raises `IllegalActionError` (leaving the
 state untouched) otherwise. Agents only ever see a `PlayerView` — their own hole
 cards plus public information — so they cannot read hidden cards.
 
-### Bot ladder (planned)
+### Bot ladder
 
 | Level | Bot | Core idea |
 |-------|-----|-----------|
@@ -178,6 +181,12 @@ showdown, so the coach never leaks information.
 python scripts/quick_match.py equity rule_balanced 10000
 ```
 
+**Update (equity realisation):** Level 3 originally under-performed Level 2 against
+the Calling Station (+1,222 vs +1,426 bb/100 on identical deals). The cause: its
+realisation factor assumed future betting would cost it equity, which a player
+who never bets cannot make it do. Level 3 now scales that loss by the opponent's
+observed aggression and wins **+1,552 ± 50** on the same deals.
+
 **Known limitations:** EV covers one street (future streets enter only through `R`).
 Postflop ranges are ranked by made-hand strength, so draws in an opponent's range
 are under-weighted. Without an opponent model, fold rates are population defaults;
@@ -225,6 +234,133 @@ option. It value-bets calling stations and bluffs players who over-fold.
 **Coach**: now runs this Level 3 analysis using a model built only from *your*
 observations. A 13×13 heatmap shows each live opponent's estimated range (pairs on
 the diagonal, suited above, offsuit below) along with their learned stats.
+
+## Level 4: CFR, verified on small games and then scaled up (Milestone 5)
+
+**Step 1: proving the solver** (`solvers/cfr.py`, `solvers/games.py`). Kuhn and
+Leduc poker are compiled into explicit game trees. CFR runs with alternating
+updates, and exploitability is computed *exactly* with a best response over
+information sets:
+`(BR₀(σ₁) + BR₁(σ₀)) / 2`, which is 0 only at a Nash equilibrium.
+
+| Game | Infosets | 100 it | 1,000 it | 10,000 it | Game value (target) |
+|------|----------|--------|----------|-----------|---------------------|
+| Kuhn | 12 | 0.0234 | 0.0065 | **0.0021** | −0.05557 (−1/18 = −0.05556) |
+| Leduc | 288 | 0.1295 | 0.0219 | **0.0059** | −0.0860 (−0.0856) |
+
+The exploitability code itself is checked against Kuhn's textbook equilibrium
+family: it scores 2×10⁻¹⁷, effectively zero. On this tree vanilla CFR converged
+faster than CFR+ (Leduc: 0.0059 vs 0.0145 at 10k iterations), so vanilla is the
+default and CFR+ is an option. Rerun with `python scripts/solve_small_games.py 10000`.
+
+**Step 2: the heads-up No-Limit blueprint** (`solvers/hunl.py`). The abstraction:
+
+* **Stacks:** 100 BB.
+* **Bets:** fold / call / ½ pot / pot / all-in. At most 3 sized raises preflop,
+  2 on the flop, and 1 each on the turn and river (all-in one level further).
+* **Cards:** all 169 preflop classes kept separate; postflop, hands are grouped
+  into 8 / 8 / 10 equity buckets (flop / turn / river).
+
+That is about 129k information sets. It was trained with external-sampling
+MCCFR on 3 processes for 30 minutes: **607,100 iterations, 125,678 information
+sets visited**, with average positive regret falling steadily (see the Lab).
+Rerun with `python scripts/train_hunl_blueprint.py 30 3`.
+
+**The Level 4 bot** (`agents/cfr_agent.py`) replays the real betting into the
+abstraction, mapping odd bet sizes with pseudo-harmonic action translation. It
+then buckets its own hand exactly as in training, samples from the average
+strategy (dropping actions under 5% to filter noise), and maps the abstract
+action back to a real bet. Multiway pots, stacks outside 40–250 BB, unvisited
+spots and untranslatable lines fall back to Level 3, and the reason is recorded.
+In heads-up play at 100 BB, **99.6%** of its decisions came from the blueprint.
+
+## Level 5: neural agent trained with PPO (Milestone 6)
+
+* **Inputs** (`learning/features.py`, 155 features): own cards, board, Monte Carlo
+  equity, made-hand category, draw flag, position, pot/stack/bet sizes in units of
+  100 BB, pot odds, SPR, the betting pattern so far, and the opponent's modelled
+  stats. A test proves the features are identical whatever the opponent's hidden
+  cards are.
+* **Actions:** fold / call / ½ pot / pot / all-in. Illegal actions are **masked**
+  (logits set to −∞); a test checks every unmasked action against the engine in
+  300 random hands.
+* **Learning** (`learning/ppo.py`): a PPO actor-critic (2×128 tanh MLP) with a
+  value baseline, GAE, normalised advantages, a clipped objective and an annealed
+  entropy bonus. The reward is the chip result in 100-BB stacks.
+* **League:** the rule-based bots, the Calling Station, Random, the Level 2 bot,
+  and frozen snapshots of itself (35% of hands), so it can't overfit to one
+  opponent or cycle in self-play.
+* **Run:** 45 minutes on 3 processes: 820 updates, 3.36M decisions. Policy
+  entropy fell from 1.47 to 0.18; checkpoints are in `checkpoints/`. Rerun with
+  `python scripts/train_neural.py 45 3`.
+* **Serving:** the exported weights (`data/neural_policy.npz`) are played in
+  NumPy, so the server does not need PyTorch.
+* **Status label:** *trained* only if the final evaluation beats every rule-based
+  bot with 95% confidence. It did: +515 ± 152 (Balanced), +336 ± 135 (Tight),
+  +460 ± 170 (Loose-Aggressive).
+
+**Honest caveat:** these wins are against bots it trained with. Against bots
+outside its league, the picture is different (6,000-hand duplicate matches):
+
+| Match | bb/100 (95% CI) |
+|-------|-----------------|
+| CFR (L4) vs Rule-based · Balanced | +63 ± 27 |
+| CFR (L4) vs Monte Carlo EV (L2) | +154 ± 63 |
+| CFR (L4) vs Exploitative (L3) | +112 ± 56 |
+| Exploitative (L3) vs Monte Carlo EV (L2) | +134 ± 100 |
+| Neural (L5) vs Monte Carlo EV (L2) | +631 ± 105 |
+| Neural (L5) vs CFR (L4) | **−225 ± 72** |
+| Neural (L5) vs Exploitative (L3) | **−426 ± 82** |
+
+The neural policy is *exploitative*: it learned to beat the league's habits, but
+an opponent that adapts during the match (Level 3) or plays close to equilibrium
+(Level 4) beats it.
+
+## Tournaments and the Lab (Milestone 7)
+
+**Duplicate tournaments** (`sim/tournament.py`): every pair plays N deals, each
+dealt twice with seats swapped so card luck largely cancels. The output includes:
+
+* head-to-head bb/100 with 95% confidence intervals;
+* a leaderboard: each bot's mean result, with the CI combined from the
+  independent matches;
+* playing stats: VPIP, PFR, aggression factor, fold frequency, went-to-showdown,
+  showdown win rate, average pot and average decision time;
+* recorded hands for the replayer.
+
+```bash
+python -m poker_ai.sim.tournament --agents rule_balanced equity exploit cfr neural --deals 300
+```
+
+**Committed benchmark** (8 bots, 1,000 hands per match, seed 2026):
+
+| Bot | Avg bb/100 (95% CI) | Worst matchup |
+|-----|---------------------|---------------|
+| Neural (PPO) · L5 | +509 ± 75 | −386 vs CFR |
+| Exploitative · L3 | +332 ± 63 | −182 vs CFR |
+| **CFR blueprint · L4** | +193 ± 46 | **+26 vs Balanced (no losing matchup)** |
+| Monte Carlo EV · L2 | +110 ± 66 | −612 vs Neural |
+| Rule-based · Balanced / Loose-Aggressive / Tight · L1 | −50 / −60 / −61 | |
+| Calling Station · L0 | −972 ± 57 | |
+
+The average rewards crushing weak bots (Neural wins +2,218 against the Calling
+Station alone); the worst matchup measures robustness. **CFR is the only bot that
+beats every opponent.**
+
+![Lab: leaderboard and head-to-head matrix](docs/lab.png)
+
+**Lab** (in the web app; also the "Lab" button on the table):
+
+* the leaderboard (with worst matchup) and a head-to-head matrix;
+* training curves: CFR exploitability (log-log), MCCFR regret, PPO win rate,
+  entropy and per-opponent evaluation;
+* a step-through hand replayer;
+* a form to launch new tournaments. They run in a separate process, so play stays
+  responsive, and are capped at 8 bots × 500 deals.
+
+Charts use a palette validated for colour-vision deficiency on the app's dark
+surface. Each bot keeps the same colour everywhere, and every chart has hover
+tooltips.
 
 ## Install & test
 

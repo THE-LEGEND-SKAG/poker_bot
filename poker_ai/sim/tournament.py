@@ -113,10 +113,15 @@ def run_tournament(kinds: list[str], deals: int, seed: int = 0, workers: int = 3
             progress_path.write_text(json.dumps({"done": len(results), "total": len(jobs), "seconds": round(time.time() - t0, 1)}))
 
     progress()
-    with Pool(max(1, min(workers, len(jobs)))) as pool:
-        for r in pool.imap_unordered(play_match, jobs):
-            results.append(r)
+    if workers <= 1:  # in-process: no fork (simpler, and safe inside threaded hosts)
+        for job in jobs:
+            results.append(play_match(job))
             progress()
+    else:
+        with Pool(min(workers, len(jobs))) as pool:
+            for r in pool.imap_unordered(play_match, jobs):
+                results.append(r)
+                progress()
     matches = sorted(results, key=lambda r: (kinds.index(r["a"]), kinds.index(r["b"])))
     stats = {k: PlayStats() for k in kinds}
     for m in matches:
