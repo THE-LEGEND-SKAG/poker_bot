@@ -1,9 +1,9 @@
 {
  "meta": {
-  "iterations": 4587,
-  "workers": 2,
-  "minutes": 0.3,
-  "infosets": 59608,
+  "iterations": 607100,
+  "workers": 3,
+  "minutes": 30.0,
+  "infosets": 125678,
   "stack_bb": 100,
   "buckets": [
    169,
@@ -17,11 +17,555 @@
    1,
    1
   ],
-  "avg_positive_regret": 0.017478713143582573,
-  "trained_at": "2026-11-08 04:51"
+  "avg_positive_regret": 0.000959308917225518,
+  "trained_at": "2026-11-08 05:21"
  },
  "workers": [
-  [],
-  []
+  [
+   {
+    "iteration": 7130,
+    "seconds": 60.0,
+    "infosets": 89590,
+    "avg_positive_regret": 0.012605151380940299
+   },
+   {
+    "iteration": 14228,
+    "seconds": 120.0,
+    "infosets": 106167,
+    "avg_positive_regret": 0.007986272124442905
+   },
+   {
+    "iteration": 20483,
+    "seconds": 180.0,
+    "infosets": 112872,
+    "avg_positive_regret": 0.006247742487273307
+   },
+   {
+    "iteration": 27767,
+    "seconds": 240.0,
+    "infosets": 117261,
+    "avg_positive_regret": 0.00508947132274597
+   },
+   {
+    "iteration": 34980,
+    "seconds": 300.0,
+    "infosets": 120049,
+    "avg_positive_regret": 0.004354782696717022
+   },
+   {
+    "iteration": 41815,
+    "seconds": 360.0,
+    "infosets": 121767,
+    "avg_positive_regret": 0.003861939478919413
+   },
+   {
+    "iteration": 47089,
+    "seconds": 420.0,
+    "infosets": 122712,
+    "avg_positive_regret": 0.003562944479864324
+   },
+   {
+    "iteration": 52656,
+    "seconds": 480.0,
+    "infosets": 123388,
+    "avg_positive_regret": 0.003296875874840713
+   },
+   {
+    "iteration": 59780,
+    "seconds": 540.0,
+    "infosets": 124038,
+    "avg_positive_regret": 0.0030087112417812273
+   },
+   {
+    "iteration": 66836,
+    "seconds": 600.0,
+    "infosets": 124576,
+    "avg_positive_regret": 0.002773077033515281
+   },
+   {
+    "iteration": 72436,
+    "seconds": 660.0,
+    "infosets": 124939,
+    "avg_positive_regret": 0.002615319338600484
+   },
+   {
+    "iteration": 78159,
+    "seconds": 720.0,
+    "infosets": 125267,
+    "avg_positive_regret": 0.0024730903671189883
+   },
+   {
+    "iteration": 84956,
+    "seconds": 780.0,
+    "infosets": 125600,
+    "avg_positive_regret": 0.002325440112442812
+   },
+   {
+    "iteration": 92136,
+    "seconds": 840.0,
+    "infosets": 125881,
+    "avg_positive_regret": 0.0021876883323937047
+   },
+   {
+    "iteration": 98606,
+    "seconds": 900.0,
+    "infosets": 126101,
+    "avg_positive_regret": 0.002081309891175882
+   },
+   {
+    "iteration": 105695,
+    "seconds": 960.0,
+    "infosets": 126311,
+    "avg_positive_regret": 0.001974847202537799
+   },
+   {
+    "iteration": 112640,
+    "seconds": 1020.0,
+    "infosets": 126464,
+    "avg_positive_regret": 0.0018822552967809167
+   },
+   {
+    "iteration": 119698,
+    "seconds": 1080.0,
+    "infosets": 126599,
+    "avg_positive_regret": 0.0017963579291543246
+   },
+   {
+    "iteration": 126667,
+    "seconds": 1140.0,
+    "infosets": 126709,
+    "avg_positive_regret": 0.0017201443472843537
+   },
+   {
+    "iteration": 133635,
+    "seconds": 1200.0,
+    "infosets": 126800,
+    "avg_positive_regret": 0.0016515004175492699
+   },
+   {
+    "iteration": 140698,
+    "seconds": 1260.0,
+    "infosets": 126911,
+    "avg_positive_regret": 0.0015869195632727162
+   },
+   {
+    "iteration": 147822,
+    "seconds": 1320.0,
+    "infosets": 126986,
+    "avg_positive_regret": 0.0015267851180514754
+   },
+   {
+    "iteration": 154893,
+    "seconds": 1380.0,
+    "infosets": 127074,
+    "avg_positive_regret": 0.0014730977320157723
+   },
+   {
+    "iteration": 161880,
+    "seconds": 1440.0,
+    "infosets": 127164,
+    "avg_positive_regret": 0.0014237248304614905
+   },
+   {
+    "iteration": 168910,
+    "seconds": 1500.0,
+    "infosets": 127252,
+    "avg_positive_regret": 0.001377273572689757
+   },
+   {
+    "iteration": 175971,
+    "seconds": 1560.0,
+    "infosets": 127321,
+    "avg_positive_regret": 0.0013342313957365442
+   },
+   {
+    "iteration": 181349,
+    "seconds": 1620.0,
+    "infosets": 127367,
+    "avg_positive_regret": 0.001303591144968291
+   },
+   {
+    "iteration": 188173,
+    "seconds": 1680.0,
+    "infosets": 127437,
+    "avg_positive_regret": 0.0012669779408498055
+   },
+   {
+    "iteration": 195156,
+    "seconds": 1740.0,
+    "infosets": 127501,
+    "avg_positive_regret": 0.0012315294705437733
+   },
+   {
+    "iteration": 202052,
+    "seconds": 1800.0,
+    "infosets": 127551,
+    "avg_positive_regret": 0.0011987545984647931
+   }
+  ],
+  [
+   {
+    "iteration": 7170,
+    "seconds": 60.0,
+    "infosets": 91114,
+    "avg_positive_regret": 0.012670226857952953
+   },
+   {
+    "iteration": 14395,
+    "seconds": 120.0,
+    "infosets": 107759,
+    "avg_positive_regret": 0.00808770616684812
+   },
+   {
+    "iteration": 20506,
+    "seconds": 180.0,
+    "infosets": 114035,
+    "avg_positive_regret": 0.006398710646224296
+   },
+   {
+    "iteration": 27657,
+    "seconds": 240.0,
+    "infosets": 118249,
+    "avg_positive_regret": 0.005242744370747614
+   },
+   {
+    "iteration": 34789,
+    "seconds": 300.0,
+    "infosets": 120747,
+    "avg_positive_regret": 0.004488905452034432
+   },
+   {
+    "iteration": 41550,
+    "seconds": 360.0,
+    "infosets": 122281,
+    "avg_positive_regret": 0.003972960304780977
+   },
+   {
+    "iteration": 46616,
+    "seconds": 420.0,
+    "infosets": 123129,
+    "avg_positive_regret": 0.0036649107337323604
+   },
+   {
+    "iteration": 52316,
+    "seconds": 480.0,
+    "infosets": 123875,
+    "avg_positive_regret": 0.003375560687118155
+   },
+   {
+    "iteration": 59614,
+    "seconds": 540.0,
+    "infosets": 124612,
+    "avg_positive_regret": 0.003079556779837568
+   },
+   {
+    "iteration": 66491,
+    "seconds": 600.0,
+    "infosets": 125124,
+    "avg_positive_regret": 0.0028442980019045146
+   },
+   {
+    "iteration": 72103,
+    "seconds": 660.0,
+    "infosets": 125448,
+    "avg_positive_regret": 0.002679193755150409
+   },
+   {
+    "iteration": 77846,
+    "seconds": 720.0,
+    "infosets": 125762,
+    "avg_positive_regret": 0.0025294611591928098
+   },
+   {
+    "iteration": 84543,
+    "seconds": 780.0,
+    "infosets": 126006,
+    "avg_positive_regret": 0.0023780137045277374
+   },
+   {
+    "iteration": 91889,
+    "seconds": 840.0,
+    "infosets": 126252,
+    "avg_positive_regret": 0.0022311784461212115
+   },
+   {
+    "iteration": 98277,
+    "seconds": 900.0,
+    "infosets": 126421,
+    "avg_positive_regret": 0.002117967009375606
+   },
+   {
+    "iteration": 105394,
+    "seconds": 960.0,
+    "infosets": 126612,
+    "avg_positive_regret": 0.0020081578116930587
+   },
+   {
+    "iteration": 112452,
+    "seconds": 1020.0,
+    "infosets": 126754,
+    "avg_positive_regret": 0.0019105758423597226
+   },
+   {
+    "iteration": 119638,
+    "seconds": 1080.0,
+    "infosets": 126879,
+    "avg_positive_regret": 0.0018219153631438272
+   },
+   {
+    "iteration": 126793,
+    "seconds": 1140.0,
+    "infosets": 127007,
+    "avg_positive_regret": 0.0017417543962130965
+   },
+   {
+    "iteration": 134043,
+    "seconds": 1200.0,
+    "infosets": 127099,
+    "avg_positive_regret": 0.0016694096669956741
+   },
+   {
+    "iteration": 141200,
+    "seconds": 1260.0,
+    "infosets": 127199,
+    "avg_positive_regret": 0.001604250682804704
+   },
+   {
+    "iteration": 148460,
+    "seconds": 1320.0,
+    "infosets": 127270,
+    "avg_positive_regret": 0.0015436660722572288
+   },
+   {
+    "iteration": 155510,
+    "seconds": 1380.0,
+    "infosets": 127351,
+    "avg_positive_regret": 0.001488647548555165
+   },
+   {
+    "iteration": 162442,
+    "seconds": 1440.0,
+    "infosets": 127440,
+    "avg_positive_regret": 0.0014388760423554611
+   },
+   {
+    "iteration": 169459,
+    "seconds": 1500.0,
+    "infosets": 127516,
+    "avg_positive_regret": 0.0013924707284304395
+   },
+   {
+    "iteration": 176437,
+    "seconds": 1560.0,
+    "infosets": 127587,
+    "avg_positive_regret": 0.001348198057764643
+   },
+   {
+    "iteration": 181802,
+    "seconds": 1620.0,
+    "infosets": 127620,
+    "avg_positive_regret": 0.0013168631232698502
+   },
+   {
+    "iteration": 188758,
+    "seconds": 1680.0,
+    "infosets": 127661,
+    "avg_positive_regret": 0.0012784736380636594
+   },
+   {
+    "iteration": 195676,
+    "seconds": 1740.0,
+    "infosets": 127706,
+    "avg_positive_regret": 0.0012423096174552554
+   },
+   {
+    "iteration": 202416,
+    "seconds": 1800.0,
+    "infosets": 127761,
+    "avg_positive_regret": 0.0012100386763581712
+   }
+  ],
+  [
+   {
+    "iteration": 7142,
+    "seconds": 60.0,
+    "infosets": 92204,
+    "avg_positive_regret": 0.012633138578334372
+   },
+   {
+    "iteration": 14377,
+    "seconds": 120.0,
+    "infosets": 107349,
+    "avg_positive_regret": 0.007967581534249537
+   },
+   {
+    "iteration": 20683,
+    "seconds": 180.0,
+    "infosets": 113158,
+    "avg_positive_regret": 0.006228689984522756
+   },
+   {
+    "iteration": 27901,
+    "seconds": 240.0,
+    "infosets": 117331,
+    "avg_positive_regret": 0.005092246819442946
+   },
+   {
+    "iteration": 35089,
+    "seconds": 300.0,
+    "infosets": 120073,
+    "avg_positive_regret": 0.004355021545412548
+   },
+   {
+    "iteration": 41921,
+    "seconds": 360.0,
+    "infosets": 121608,
+    "avg_positive_regret": 0.00386179061771118
+   },
+   {
+    "iteration": 47449,
+    "seconds": 420.0,
+    "infosets": 122590,
+    "avg_positive_regret": 0.003546537275698273
+   },
+   {
+    "iteration": 53133,
+    "seconds": 480.0,
+    "infosets": 123378,
+    "avg_positive_regret": 0.003277952911776926
+   },
+   {
+    "iteration": 60367,
+    "seconds": 540.0,
+    "infosets": 124116,
+    "avg_positive_regret": 0.0029961896034218644
+   },
+   {
+    "iteration": 67294,
+    "seconds": 600.0,
+    "infosets": 124618,
+    "avg_positive_regret": 0.0027709755743757993
+   },
+   {
+    "iteration": 72895,
+    "seconds": 660.0,
+    "infosets": 124971,
+    "avg_positive_regret": 0.0026136492926738626
+   },
+   {
+    "iteration": 78500,
+    "seconds": 720.0,
+    "infosets": 125232,
+    "avg_positive_regret": 0.002476928395666659
+   },
+   {
+    "iteration": 85350,
+    "seconds": 780.0,
+    "infosets": 125505,
+    "avg_positive_regret": 0.00232962997837491
+   },
+   {
+    "iteration": 92549,
+    "seconds": 840.0,
+    "infosets": 125776,
+    "avg_positive_regret": 0.002194417077183502
+   },
+   {
+    "iteration": 99057,
+    "seconds": 900.0,
+    "infosets": 125964,
+    "avg_positive_regret": 0.0020860101795364405
+   },
+   {
+    "iteration": 106190,
+    "seconds": 960.0,
+    "infosets": 126238,
+    "avg_positive_regret": 0.0019790242021525415
+   },
+   {
+    "iteration": 113105,
+    "seconds": 1020.0,
+    "infosets": 126411,
+    "avg_positive_regret": 0.0018874216503420099
+   },
+   {
+    "iteration": 120032,
+    "seconds": 1080.0,
+    "infosets": 126588,
+    "avg_positive_regret": 0.0018062425934836507
+   },
+   {
+    "iteration": 127097,
+    "seconds": 1140.0,
+    "infosets": 126742,
+    "avg_positive_regret": 0.0017308844334932793
+   },
+   {
+    "iteration": 134110,
+    "seconds": 1200.0,
+    "infosets": 126890,
+    "avg_positive_regret": 0.0016619129243581245
+   },
+   {
+    "iteration": 141187,
+    "seconds": 1260.0,
+    "infosets": 127022,
+    "avg_positive_regret": 0.0015990701950880047
+   },
+   {
+    "iteration": 148447,
+    "seconds": 1320.0,
+    "infosets": 127132,
+    "avg_positive_regret": 0.0015397385867182477
+   },
+   {
+    "iteration": 155617,
+    "seconds": 1380.0,
+    "infosets": 127213,
+    "avg_positive_regret": 0.0014856927820162975
+   },
+   {
+    "iteration": 162603,
+    "seconds": 1440.0,
+    "infosets": 127301,
+    "avg_positive_regret": 0.0014368874348098626
+   },
+   {
+    "iteration": 169557,
+    "seconds": 1500.0,
+    "infosets": 127369,
+    "avg_positive_regret": 0.0013919676838728993
+   },
+   {
+    "iteration": 176546,
+    "seconds": 1560.0,
+    "infosets": 127439,
+    "avg_positive_regret": 0.001350400861981666
+   },
+   {
+    "iteration": 181849,
+    "seconds": 1620.0,
+    "infosets": 127502,
+    "avg_positive_regret": 0.0013205264875098537
+   },
+   {
+    "iteration": 188791,
+    "seconds": 1680.0,
+    "infosets": 127555,
+    "avg_positive_regret": 0.0012831452737929374
+   },
+   {
+    "iteration": 195813,
+    "seconds": 1740.0,
+    "infosets": 127600,
+    "avg_positive_regret": 0.0012469770661771998
+   },
+   {
+    "iteration": 202632,
+    "seconds": 1800.0,
+    "infosets": 127632,
+    "avg_positive_regret": 0.001213979199466885
+   }
+  ]
  ]
 }
