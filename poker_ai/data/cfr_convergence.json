@@ -1,0 +1,146 @@
+{
+ "kuhn": {
+  "infosets": 12,
+  "target_value": -0.05555555555555555,
+  "variant": "cfr",
+  "curve": [
+   {
+    "iteration": 1,
+    "exploitability": 0.27083333333333337,
+    "value": 5.551115123125783e-17
+   },
+   {
+    "iteration": 2,
+    "exploitability": 0.24479166666666666,
+    "value": -0.12760416666666657
+   },
+   {
+    "iteration": 5,
+    "exploitability": 0.09244127269375389,
+    "value": -0.056946455715805144
+   },
+   {
+    "iteration": 10,
+    "exploitability": 0.0653803414941131,
+    "value": -0.05819596343133987
+   },
+   {
+    "iteration": 20,
+    "exploitability": 0.049787896103524756,
+    "value": -0.06135844255887207
+   },
+   {
+    "iteration": 50,
+    "exploitability": 0.02732459357213439,
+    "value": -0.05826445804973668
+   },
+   {
+    "iteration": 100,
+    "exploitability": 0.023364255486348115,
+    "value": -0.05709260169534902
+   },
+   {
+    "iteration": 200,
+    "exploitability": 0.014967682320814371,
+    "value": -0.05621264977352847
+   },
+   {
+    "iteration": 500,
+    "exploitability": 0.008767667278951188,
+    "value": -0.055835370062448625
+   },
+   {
+    "iteration": 1000,
+    "exploitability": 0.0065032552795668275,
+    "value": -0.05570748065232797
+   },
+   {
+    "iteration": 2000,
+    "exploitability": 0.004727738264051401,
+    "value": -0.0556340464738915
+   },
+   {
+    "iteration": 5000,
+    "exploitability": 0.0029708525622167,
+    "value": -0.055586223635159804
+   },
+   {
+    "iteration": 10000,
+    "exploitability": 0.002136119398931033,
+    "value": -0.05557084305269261
+   }
+  ]
+ },
+ "leduc": {
+  "infosets": 288,
+  "target_value": -0.0856,
+  "variant": "cfr",
+  "curve": [
+   {
+    "iteration": 1,
+    "exploitability": 2.4134734589753686,
+    "value": -0.31534746195275765
+   },
+   {
+    "iteration": 2,
+    "exploitability": 2.240586086716407,
+    "value": -0.4129894173434509
+   },
+   {
+    "iteration": 5,
+    "exploitability": 1.8494076218205464,
+    "value": -0.4760390014000978
+   },
+   {
+    "iteration": 10,
+    "exploitability": 1.0543421981068062,
+    "value": -0.48808838315980807
+   },
+   {
+    "iteration": 20,
+    "exploitability": 0.6129339552196262,
+    "value": -0.34118682492032004
+   },
+   {
+    "iteration": 50,
+    "exploitability": 0.2396406494860775,
+    "value": -0.18219492300615078
+   },
+   {
+    "iteration": 100,
+    "exploitability": 0.12948519812629047,
+    "value": -0.12932180967098722
+   },
+   {
+    "iteration": 200,
+    "exploitability": 0.0715595799577245,
+    "value": -0.102677934762229
+   },
+   {
+    "iteration": 500,
+    "exploitability": 0.030113628776637837,
+    "value": -0.09139181312951579
+   },
+   {
+    "iteration": 1000,
+    "exploitability": 0.02189090447783515,
+    "value": -0.08907605329684379
+   },
+   {
+    "iteration": 2000,
+    "exploitability": 0.012815827502167067,
+    "value": -0.08744574231282182
+   },
+   {
+    "iteration": 5000,
+    "exploitability": 0.008554966378599878,
+    "value": -0.08637689872623763
+   },
+   {
+    "iteration": 10000,
+    "exploitability": 0.005919885171214362,
+    "value": -0.08602009168781419
+   }
+  ]
+ }
+}
