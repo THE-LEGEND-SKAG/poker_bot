@@ -138,12 +138,17 @@ def test_coach_analyses_only_human_decisions_and_review_waits_for_hand_end():
         c = s.coach(sims=200)
         assert c is not None and c["decision_id"] == s.decision_id
         assert 0 <= c["equity"]["equity"] <= 1 and c["options"]
+        live_opps = {p.seat for p in s.hand.players if p.live and p.seat != HUMAN}
+        assert {o["seat"] for o in c["opponent_ranges"]} == live_opps
+        for o in c["opponent_ranges"]:
+            assert len(o["grid"]) == 169 and max(o["grid"]) == 1.0
         legal = s.hand.legal_actions()
         best = c["best"]
         assert legal.is_legal(Action(ActionType(best["action"]), best["amount"]))
         checked += 1
         s.human_act("check" if legal.can_check else "call")
     assert checked > 3
+    assert HUMAN not in s.coach_model.seats and s.coach_model.seats  # learned about bots, never about you
 
 
 def test_websocket_sends_coach_message():

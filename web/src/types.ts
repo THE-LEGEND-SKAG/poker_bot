@@ -90,6 +90,15 @@ export type CoachAnalysis = {
   range_note: string;
   options: CoachOption[];
   best: CoachOption;
+  opponent_ranges: OpponentRange[];
+  stat_labels: Record<string, string>;
+};
+
+export type OpponentRange = {
+  seat: number;
+  name: string;
+  grid: number[];
+  stats: Record<string, number> & { hands: number; samples: Record<string, number> };
 };
 
 export type AgentInfo = { kind: string; label: string; level: number };

@@ -7,6 +7,7 @@ from typing import Any
 
 from .base import Agent
 from .equity_agent import EquityAgent
+from .exploitative import ExploitativeAgent
 from .random_agent import CallingStation, RandomAgent
 from .rule_based import PERSONALITIES, RuleBasedAgent
 
@@ -19,6 +20,7 @@ for _key, _p in PERSONALITIES.items():
     _REGISTRY[f"rule_{_key}"] = (lambda n, s, k=_key: RuleBasedAgent(k, n, s), {"label": f"Rule-based · {_p.label}", "level": 1})
 
 _REGISTRY["equity"] = (lambda n, s: EquityAgent(n, s), {"label": "Monte Carlo EV", "level": 2})
+_REGISTRY["exploit"] = (lambda n, s: ExploitativeAgent(n, s), {"label": "Exploitative (opponent model)", "level": 3})
 
 
 def register(kind: str, factory: Callable[[str | None, int | None], Agent], label: str, level: int) -> None:
@@ -35,4 +37,4 @@ def make_agent(kind: str, name: str | None = None, seed: int | None = None) -> A
     return _REGISTRY[kind][0](name, seed)
 
 
-__all__ = ["Agent", "CallingStation", "EquityAgent", "RandomAgent", "RuleBasedAgent", "available_agents", "make_agent", "register"]
+__all__ = ["Agent", "CallingStation", "EquityAgent", "ExploitativeAgent", "RandomAgent", "RuleBasedAgent", "available_agents", "make_agent", "register"]

@@ -4,8 +4,8 @@ A playable No-Limit Texas Hold'em platform: a rules-exact engine, a ladder of
 AI opponents (rule-based → Monte Carlo → exploitative → CFR blueprint → neural
 PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 
-> **Status:** Milestones 1–3 complete: the engine, a playable web table, rule-based and
-> Monte Carlo EV bots, and a Coach panel. Rows marked ☐ are **not built yet** and are not claimed to work.
+> **Status:** Milestones 1–4 complete: the engine, a playable web table, rule-based,
+> Monte Carlo EV and exploitative (opponent-modelling) bots, and a Coach panel with range heatmaps. Rows marked ☐ are **not built yet** and are not claimed to work.
 
 ![Three-way all-in with a side pot](docs/table-showdown.png)
 
@@ -16,7 +16,7 @@ PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 | 1 | Engine: evaluator, betting, all-ins, side pots, randomised chip-conservation stress test | ✅ done |
 | 2 | Rule-based bots + playable table UI (FastAPI + React vertical slice) | ✅ done, 94 tests total |
 | 3 | Monte Carlo equity bot + Coach panel (equity, pot odds, EV per action) | ✅ done |
-| 4 | Opponent modelling (Bayesian stats, range narrowing) + 13×13 range heatmap | ☐ |
+| 4 | Opponent modelling (Bayesian stats, range narrowing) + 13×13 range heatmap | ✅ done |
 | 5 | CFR: verified on Kuhn (game value −1/18) and Leduc via exploitability, then MCCFR blueprint for abstracted heads-up NLHE | ☐ |
 | 6 | Neural agent: PPO with action masking, equity feature, league training | ☐ |
 | 7 | Duplicate tournaments, bb/100 with 95% CIs, Lab dashboard | ☐ |
@@ -27,12 +27,12 @@ PPO), a duplicate-match evaluation harness, and a web table with a coach panel.
 ```
 poker_ai/
   engine/      cards, hand evaluator, actions + legality, game state, pots, table   ✅
-  agents/      random, calling station, rule_based, equity/EV ✅ · exploitative, cfr, neural ☐
+  agents/      random, calling station, rule_based, equity/EV, exploitative ✅ · cfr, neural ☐
   solvers/     cfr (Kuhn/Leduc/HUNL), abstraction, exploitability                   ☐
   learning/    networks, ppo, league, checkpoints                                   ☐
   sim/         hand/session runner ✅ · duplicate matches, tournaments, CIs ☐
   server/      FastAPI + WebSocket game sessions                                    ✅
-web/           React + Tailwind + Framer Motion: Table, Coach ✅ · range heatmap, Lab ☐
+web/           React + Tailwind + Framer Motion: Table, Coach, range heatmap ✅ · Lab ☐
 tests/
 ```
 
@@ -182,6 +182,49 @@ python scripts/quick_match.py equity rule_balanced 10000
 Postflop ranges are ranked by made-hand strength, so draws in an opponent's range
 are under-weighted. Without an opponent model, fold rates are population defaults;
 Level 3 replaces them with observed statistics.
+
+## Level 3: exploitative bot with opponent modelling (Milestone 4)
+
+**Tendencies** (`agents/opponent_model.py`): for every opponent the model tracks
+VPIP, PFR, folding to a preflop raise, betting when checked to, folding to a bet,
+raising against a bet, and going to showdown. Each is a Beta distribution that
+starts from a population prior worth a few hands and is updated by Bayes' rule
+after every hand. Early estimates stay close to typical play and sharpen with
+evidence. The model reads only public actions and cards shown at showdown.
+
+**Ranges**: each opponent starts on all 1,326 holdings (minus cards we can see).
+Every action in the hand multiplies each holding's weight by the likelihood of
+that action with that holding:
+
+`P(hand | actions) ∝ P(hand) · Π P(action | hand, tendencies)`
+
+The likelihoods are smooth functions of hand strength, with thresholds set by
+that opponent's stats:
+
+* **Preflop:** strength is the hand's percentile. A 40%-PFR player raises far
+  wider than an 8% one, and calls exclude most hands they would have raised.
+* **Postflop:** strength is the hand's current percentile on the board, with
+  extra credit for flush and straight draws. Bets and raises shift weight toward
+  strong hands and draws; checks shift it toward weaker ones.
+
+Learned profiles after 150 hands of observation:
+
+| Bot | VPIP | PFR | Bets when checked to | Folds to bet |
+|-----|------|-----|----------------------|--------------|
+| Calling Station | 75% | 0.5% | 0.5% | 1% |
+| Rule-based · Tight | 27% | 7% | 31% | 30% |
+| Rule-based · Loose-Aggressive | 59% | 31% | 54% | 25% |
+
+**The Level 3 bot** (`agents/exploitative.py`) uses the Level 2 EV engine with two
+inputs replaced: equity is computed against the modelled ranges, and fold
+probabilities shift, on the log-odds scale, by how much more or less often that
+opponent folds than the prior. Bluffs therefore come from evidence: a weak hand
+bets only when that opponent's fold rate and range make betting the highest-EV
+option. It value-bets calling stations and bluffs players who over-fold.
+
+**Coach**: now runs this Level 3 analysis using a model built only from *your*
+observations. A 13×13 heatmap shows each live opponent's estimated range (pairs on
+the diagonal, suited above, offsuit below) along with their learned stats.
 
 ## Install & test
 

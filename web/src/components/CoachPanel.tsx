@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { CoachAnalysis, GameState, ReviewItem } from "../types";
+import RangeHeatmap from "./RangeHeatmap";
 
 const pct = (x: number, digits = 0) => `${(x * 100).toFixed(digits)}%`;
 
@@ -111,7 +112,7 @@ export default function CoachPanel({ state, analysis, enabled, onToggle }: Props
   return (
     <div className="flex h-full min-h-0 flex-col rounded-2xl border border-white/10 bg-slate-950/70">
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Coach · Level 2 model</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Coach · Level 3 model</span>
         <label className="flex items-center gap-1.5 text-xs text-slate-400">
           <input type="checkbox" checked={enabled} onChange={(e) => onToggle(e.target.checked)} className="accent-emerald-500" />
           on
@@ -149,9 +150,10 @@ export default function CoachPanel({ state, analysis, enabled, onToggle }: Props
               </div>
             </div>
             <Options a={analysis} />
+            <RangeHeatmap ranges={analysis.opponent_ranges} labels={analysis.stat_labels} />
             <p className="text-[10px] leading-snug text-slate-500">
-              EV is chips gained from this decision onward (fold = 0). Opponent ranges narrow with bet size; fold rates assume
-              opponents defend a bit more than the game-theory minimum. A model, not a solver.
+              EV is chips gained from this decision onward (fold = 0). Ranges and fold rates come from each opponent's observed
+              actions (Bayesian updates from population priors). A model, not a solver.
             </p>
           </>
         )}

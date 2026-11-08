@@ -11,9 +11,12 @@ import random
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
+
 from poker_ai.agents import available_agents, make_agent
 from poker_ai.agents.base import Agent
-from poker_ai.agents.ev import analyze
+from poker_ai.agents.exploitative import modelled_analysis
+from poker_ai.agents.opponent_model import STAT_LABELS, OpponentModel, blocked_mask, class_grid
 from poker_ai.agents.preflop import hand_class, preflop_equity
 from poker_ai.engine import Action, ActionType, HandState, Table, TableConfig, card_str, describe, evaluate
 
@@ -71,6 +74,8 @@ class GameSession:
         self.session_net = [0] * n
         self.hands_played = 0
         self.decisions: list[dict[str, Any]] = []  # bot reasoning for the current hand
+        self.coach_model = OpponentModel(me=HUMAN)  # learned only from what the human can see
+        self.np_rng = np.random.default_rng(self.rng.randrange(2**31))
 
     # ------------------------------------------------------------- lifecycle
     @property
@@ -113,6 +118,8 @@ class GameSession:
     def _settle(self) -> None:
         assert self.hand is not None and self.hand.terminal
         net = self.table.end_hand()
+        if self.hand.players[HUMAN].in_hand:
+            self.coach_model.observe_hand(self.hand.view(HUMAN))
         for s in range(self.num_seats):
             self.session_net[s] += net[s]
         for s, agent in self.agents.items():
@@ -162,12 +169,19 @@ class GameSession:
         return f"{self.hand.hand_id if self.hand else 0}:{len(self.hand.events) if self.hand else 0}"
 
     def coach(self, sims: int = 1500) -> dict[str, Any] | None:
-        """Level 2 analysis of the human's own decision. Uses only the human's view."""
+        """Level 3 analysis of the human's own decision, using an opponent model
+        built only from the human's own observations (public information)."""
         if self.to_act != HUMAN:
             return None
         assert self.hand is not None
         view = self.hand.view(HUMAN)
-        a = analyze(view, sims=sims, rng=random.Random(self.rng.random()))
+        a, weights = modelled_analysis(view, self.coach_model, sims, random.Random(self.rng.random()), self.np_rng)
+        blocked = blocked_mask(list(view.hole) + list(view.board))
+        opponents = [
+            {"seat": seat, "name": self.names[seat], "grid": class_grid(w, blocked),
+             "stats": self.coach_model.get(seat).as_dict()}
+            for seat, w in weights.items()
+        ]
         made = describe(evaluate(list(view.hole) + list(view.board))) if len(view.board) >= 3 else None
         cls = hand_class(*view.hole)
         return {
@@ -175,6 +189,8 @@ class GameSession:
             "hand_class": cls,
             "preflop_equity_vs_random": preflop_equity(view.hole[0], view.hole[1], max(1, view.num_live - 1)),
             "made_hand": made,
+            "opponent_ranges": opponents,
+            "stat_labels": STAT_LABELS,
             **a.as_dict(),
         }
 
